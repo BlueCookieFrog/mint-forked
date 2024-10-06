@@ -153,6 +153,9 @@ pub struct App {
     self_update_rid: Option<MessageHandle<SelfUpdateProgress>>,
     original_exe_path: Option<PathBuf>,
     problematic_mod_id: Option<u32>,
+    show_version_combo:  bool,
+    show_copy_url:  bool,
+    show_mod_type_tags: bool,
 }
 
 #[derive(Default)]
@@ -250,6 +253,9 @@ impl App {
             self_update_rid: None,
             original_exe_path: None,
             problematic_mod_id: None,
+            show_version_combo: true,
+            show_copy_url: true,
+            show_mod_type_tags: true,
         })
     }
 
@@ -397,19 +403,19 @@ impl App {
                         }
                     }
 
-                    if *qol {
+                    if *qol && self.show_mod_type_tags{
                         mk_searchable_modio_tag("QoL", ui, None, None);
                     }
-                    if *gameplay {
+                    if *gameplay && self.show_mod_type_tags{
                         mk_searchable_modio_tag("Gameplay", ui, None, None);
                     }
-                    if *audio {
+                    if *audio && self.show_mod_type_tags{
                         mk_searchable_modio_tag("Audio", ui, None, None);
                     }
-                    if *visual {
+                    if *visual && self.show_mod_type_tags{
                         mk_searchable_modio_tag("Visual", ui, None, None);
                     }
-                    if *framework {
+                    if *framework && self.show_mod_type_tags{
                         mk_searchable_modio_tag("Framework", ui, None, None);
                     }
                 }
@@ -475,33 +481,36 @@ impl App {
                 }
 
                 if let Some(info) = &info {
-                    egui::ComboBox::from_id_source(row_index)
+                    let combo = egui::ComboBox::from_id_source(row_index)
                         .selected_text(
                             self.state
                                 .store
                                 .get_version_name(&mc.spec)
                                 .unwrap_or_default(),
-                        )
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut mc.spec.url,
-                                info.spec.url.to_string(),
-                                self.state
-                                    .store
-                                    .get_version_name(&info.spec)
-                                    .unwrap_or_default(),
-                            );
-                            for version in info.versions.iter().rev() {
+                        );
+
+                        if self.show_version_combo{
+                            combo.show_ui(ui, |ui| {
                                 ui.selectable_value(
                                     &mut mc.spec.url,
-                                    version.url.to_string(),
+                                    info.spec.url.to_string(),
                                     self.state
                                         .store
-                                        .get_version_name(version)
+                                        .get_version_name(&info.spec)
                                         .unwrap_or_default(),
                                 );
-                            }
-                        });
+                                for version in info.versions.iter().rev() {
+                                    ui.selectable_value(
+                                        &mut mc.spec.url,
+                                        version.url.to_string(),
+                                        self.state
+                                            .store
+                                            .get_version_name(version)
+                                            .unwrap_or_default(),
+                                    );
+                                }
+                            });
+                        };
 
                     ui.scope(|ui| {
                         ui.style_mut().spacing.interact_size.x = 30.;
@@ -540,12 +549,14 @@ impl App {
                         );
                     });
 
-                    if ui
+                    if self.show_copy_url{
+                        if ui
                         .button("📋")
                         .on_hover_text_at_pointer("copy URL")
                         .clicked()
-                    {
-                        ui.output_mut(|o| o.copied_text = mc.spec.url.to_string());
+                        {
+                            ui.output_mut(|o| o.copied_text = mc.spec.url.to_string());
+                        }
                     }
 
                     if mc.enabled {
@@ -862,6 +873,7 @@ impl App {
                     .collapsible(false)
                     .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
                     .resizable(false)
+                    .vscroll(true)
                     .show(ctx, |ui| {
                         CommonMarkViewer::new("available-update")
                             .max_image_width(Some(512))
@@ -1762,7 +1774,9 @@ impl eframe::App for App {
                         }
 
                         ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
-                            let mut button = ui.button("Install mods");
+                            let mut button = ui.button("Apply changes").on_hover_text(
+                                "Install the hook dll to game folder and regenerate mod bundle",
+                            );
                             if self.state.config.drg_pak_path.is_none() {
                                 button = button.on_disabled_hover_text(
                                     "DRG install not found. Configure it in the settings menu.",
@@ -1799,13 +1813,35 @@ impl eframe::App for App {
                             }
                         });
 
+                        if ui
+                            .button("Check for updates")
+                            .on_hover_text(
+                                "Checks for updates for all mods and updates local cache",
+                            )
+                            .clicked()
+                        {
+                            message::UpdateCache::send(self);
+                            self.problematic_mod_id = None;
+                        }
+
                         ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
-                            let mut button = ui.button("Uninstall mods");
-                            if self.state.config.drg_pak_path.is_none() {
-                                button = button.on_disabled_hover_text(
-                                    "DRG install not found. Configure it in the settings menu.",
-                                );
-                            }
+                           // UGH, Rust is confusing
+                            let button = ui
+                            .scope( |ui| {
+                                ui.visuals_mut().widgets.hovered.weak_bg_fill = colors::DARK_RED;
+                                ui.visuals_mut().widgets.active.weak_bg_fill = colors::DARKER_RED;
+                                if self.state.config.drg_pak_path.is_some(){
+                                    ui.button("Uninstall mods").on_hover_text(
+                                        "Remove the hook dll and mod bundle from game folder",
+                                    )}
+                                else {
+                                    ui.button("Uninstall mods").on_disabled_hover_text(
+                                        "DRG install not found. Configure it in the settings menu.",
+                                    )
+                                }
+                            })
+                            .inner;
+
                             if button.clicked() {
                                 self.last_action = None;
                                 if let Some(pak_path) = &self.state.config.drg_pak_path {
@@ -1837,17 +1873,6 @@ impl eframe::App for App {
                                 }
                             }
                         });
-
-                        if ui
-                            .button("Update cache")
-                            .on_hover_text(
-                                "Checks for updates for all mods and updates local cache",
-                            )
-                            .clicked()
-                        {
-                            message::UpdateCache::send(self);
-                            self.problematic_mod_id = None;
-                        }
                     },
                 );
                 if self.integrate_rid.is_some() {
@@ -1938,7 +1963,9 @@ impl eframe::App for App {
                     ui.output_mut(|o| o.copied_text = mods);
                 }
 
-                // TODO find better icon, flesh out multiple-view usage, fix GUI locking
+                // TODO: find better icon, flesh out multiple-view usage, fix GUI locking
+                // PONDER What was the idea behind this?
+                // Opens separate window, within main window borders, with the list of mods in selected profile
                 /*
                 if ui
                     .button("pop out")
@@ -1965,30 +1992,35 @@ impl eframe::App for App {
                 if self.resolve_mod_rid.is_some() {
                     ui.spinner();
                 }
-                ui.with_layout(ui.layout().with_main_justify(true), |ui| {
-                    // define multiline layouter to be able to show multiple lines in a single line widget
-                    let font_id = FontSelection::default().resolve(ui.style());
-                    let text_color = ui.visuals().widgets.inactive.text_color();
-                    let mut multiline_layouter = move |ui: &Ui, text: &str, wrap_width: f32| {
-                        let layout_job = LayoutJob::simple(
-                            text.to_string(),
-                            font_id.clone(),
-                            text_color,
-                            wrap_width,
-                        );
-                        ui.fonts(|f| f.layout_job(layout_job))
-                    };
 
-                    let resolve = ui.add_enabled(
-                        self.resolve_mod_rid.is_none(),
-                        egui::TextEdit::singleline(&mut self.resolve_mod)
-                            .layouter(&mut multiline_layouter)
-                            .hint_text("Add mod..."),
-                    );
-                    if is_committed(&resolve) {
-                        message::ResolveMods::send(self, ctx, self.parse_mods(), false);
-                        self.problematic_mod_id = None;
-                    }
+                egui::ScrollArea::vertical()
+                .max_height(300.0)
+                .show(ui, |ui|{
+                    ui.with_layout(ui.layout().with_main_justify(true), |ui| {
+                        // define multiline layouter to be able to show multiple lines in a single line widget
+                        let font_id = FontSelection::default().resolve(ui.style());
+                        let text_color = ui.visuals().widgets.inactive.text_color();
+                        let mut multiline_layouter = move |ui: &Ui, text: &str, wrap_width: f32| {
+                            let layout_job = LayoutJob::simple(
+                                text.to_string(),
+                                font_id.clone(),
+                                text_color,
+                                wrap_width,
+                            );
+                            ui.fonts(|f| f.layout_job(layout_job))
+                        };
+
+                        let resolve = ui.add_enabled(
+                            self.resolve_mod_rid.is_none(),
+                            egui::TextEdit::singleline(&mut self.resolve_mod)
+                                .layouter(&mut multiline_layouter)
+                                .hint_text("Add mod..."),
+                        );
+                        if is_committed(&resolve) {
+                            message::ResolveMods::send(self, ctx, self.parse_mods(), false);
+                            self.problematic_mod_id = None;
+                        }
+                    });
                 });
             });
 
@@ -2056,7 +2088,15 @@ impl eframe::App for App {
                     self.focus_search = false;
                 }
             });
-            ui.add_space(4.);
+
+            ui.horizontal(|ui| {
+
+                ui.label("Display: ");
+                ui.checkbox(&mut self.show_version_combo, "Version select");
+                ui.checkbox(&mut self.show_copy_url, "Copy URL");
+                ui.checkbox(&mut self.show_mod_type_tags, "Mod tags");
+
+            });
 
             self.ui_profile(ui, &profile);
 

@@ -4,6 +4,14 @@
 
 ## [Unreleased] - ReleaseDate
 
+### User Interface
+
+- Make update message scrollable, so it doesn't go outside visible area making it impossible to close
+- Fix in-app update download
+- Update button names to better reflect what they do
+- Swap postion of "Update mods" and "Uninstall mods"
+- Update mod address entry to be scrollable
+
 ### Core Functionality
 
 - Removed redundant patch to fix gas clouds not exploding
