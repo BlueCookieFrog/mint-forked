@@ -541,7 +541,15 @@ impl App {
                                         format!("{n}")
                                     }
                                 })
-                                .speed(0.05)
+                                .speed({
+                                    if self.state.config.sorting_config.clone().unwrap_or_default().sort_category == SortBy::Priority{
+                                        0.00
+                                    }
+                                    else {
+                                        0.05
+                                    }
+                                })
+                                .update_while_editing(false)
                                 .clamp_range(RangeInclusive::new(-999, 999)),
                         )
                         .on_hover_text_at_pointer(
