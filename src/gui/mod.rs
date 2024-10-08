@@ -360,7 +360,7 @@ impl App {
                             }
                         };
 
-                    match approval_status {
+                        match approval_status {
                         ApprovalStatus::Verified => {
                             mk_searchable_modio_tag(
                                 "Verified",
@@ -1646,6 +1646,7 @@ fn sort_mods(
         if config.is_ascending {
             order = order.reverse();
         }
+        // TODO When using sorting by priority, mods without value shouldn't be sorted by name!
         if config.sort_category != SortBy::Name {
             order = order.then(name_order);
         }
