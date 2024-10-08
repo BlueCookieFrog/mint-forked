@@ -11,6 +11,7 @@
 - Update button names to better reflect what they do
 - Swap postion of "Update mods" and "Uninstall mods"
 - Update mod address entry to be scrollable
+- Fix changing load priority value, while using priority sort option, resulting in weird behaviour
 
 ### Core Functionality
 
