@@ -597,7 +597,7 @@ impl<W: Write + Seek> ModBundleWriter<W> {
         config: MetaConfig,
         mods: &[(ModInfo, PathBuf)],
     ) -> Result<(), IntegrationError> {
-        let mut split = env!("CARGO_PKG_VERSION").split('.');
+        let mut split = env!("CARGO_PKG_VERSION").split(['.', '-']);
         let version = SemverVersion {
             major: split.next().unwrap().parse().unwrap(),
             minor: split.next().unwrap().parse().unwrap(),
