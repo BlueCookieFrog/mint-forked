@@ -2100,6 +2100,11 @@ impl eframe::App for App {
                                 self.scroll_to_match = false;
                             } else if self.focus_search {
                                 res.request_focus();
+                                // FIXME This is still an erroneous behaviour, but more acceptable than alternative
+                                // Doesn't save the first character when typing in unfocused state
+                                // without this line, thefirst character stays in the search bar
+                                // but cursor moves to the beggining of the string
+                                *search_string = String::new();
                                 self.focus_search = false;
                             }
                         });
