@@ -836,16 +836,19 @@ impl App {
             let now = SystemTime::now();
             let wait_time = Duration::from_secs(10);
             egui::Area::new(Id::new("available-update-overlay"))
-                .movable(false)
-                .fixed_pos(Pos2::ZERO)
-                .order(egui::Order::Background)
-                .show(ctx, |ui| {
-                    egui::Frame::none()
-                        .fill(Color32::from_rgba_unmultiplied(0, 0, 0, 127))
-                        .show(ui, |ui| {
-                            ui.allocate_space(ui.available_size());
+            .movable(false)
+            .fixed_pos(Pos2::ZERO)
+            .order(egui::Order::Background)
+            .show(ctx, |ui| {
+                egui::Frame::none()
+                .fill(Color32::from_rgba_unmultiplied(0, 0, 0, 127))
+                .show(ui, |ui| {
+                            // ui.available_size doesn't work for some reason after updating from egui 0.25.0 to 0.29.1
+                            // HACK ugly hack to grab the size from window vertices, not sure if I'm cooking or I'm cooked
+                            ui.allocate_space(Vec2{x: ctx.screen_rect().max.x, y: ctx.screen_rect().max.y});
+                            // ui.allocate_space(ui.available_size());
                         })
-                });
+                    });
             if let Some(MessageHandle { state, .. }) = &self.self_update_rid {
                 egui::Window::new("Update progress")
                     .collapsible(false)
@@ -881,7 +884,7 @@ impl App {
                 egui::Window::new(format!("Update available: {}", update.tag_name))
                     .collapsible(false)
                     .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
-                    .resizable(false)
+                    .resizable([false, true])
                     .vscroll(true)
                     .show(ctx, |ui| {
                         CommonMarkViewer::new()
