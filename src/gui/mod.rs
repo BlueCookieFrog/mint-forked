@@ -2102,12 +2102,10 @@ impl eframe::App for App {
                         });
 
                         ui.horizontal(|ui| {
-
                             ui.label("Display: ");
                             ui.checkbox(&mut self.show_version_combo, "Version select");
                             ui.checkbox(&mut self.show_copy_url, "Copy URL");
                             ui.checkbox(&mut self.show_mod_type_tags, "Mod tags");
-
                         });
 
                         self.ui_profile(ui, &profile);
