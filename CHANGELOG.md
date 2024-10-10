@@ -12,6 +12,7 @@
 - Swap postion of "Update mods" and "Uninstall mods"
 - Update mod address entry to be scrollable
 - Fix changing load priority value, while using priority sort option, resulting in weird behaviour
+- Removed "Optional" tag and shortened "RequiredByAll" to "ReqByAll"
 
 ### Core Functionality
 
