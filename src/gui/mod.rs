@@ -383,26 +383,17 @@ impl App {
                         }
                     }
 
-                    match required_status {
-                        RequiredStatus::RequiredByAll => {
+                    if *required_status == RequiredStatus::RequiredByAll {
                             mk_searchable_modio_tag(
-                                "RequiredByAll",
+                                "ReqByAll",
                                 ui,
                                 Some(egui::Color32::LIGHT_RED),
                                 Some(
-                                    "All lobby members must use this mod for it to work correctly!",
+                                    "Required By All - All lobby members must use this mod for it to work correctly!",
                                 ),
                             );
                         }
-                        RequiredStatus::Optional => {
-                            mk_searchable_modio_tag(
-                                "Optional",
-                                ui,
-                                None,
-                                Some("Clients are not required to install this mod to function"),
-                            );
-                        }
-                    }
+
 
                     if *qol && self.show_mod_type_tags{
                         mk_searchable_modio_tag("QoL", ui, None, None);
@@ -1756,8 +1747,10 @@ impl eframe::App for App {
         self.show_lints_toggle(ctx);
         self.show_lint_report(ctx);
 
-        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-            ui.with_layout(egui::Layout::right_to_left(Align::TOP), |ui| {
+        egui::TopBottomPanel::bottom("bottom_panel")
+        .exact_height(27.0)
+        .show(ctx, |ui| {
+            ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
                 ui.add_enabled_ui(
                     self.integrate_rid.is_none()
                         && self.update_rid.is_none()
@@ -1927,7 +1920,15 @@ impl eframe::App for App {
                         });
                     }
                 }
-                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                ui.with_layout(egui::Layout::left_to_right(Align::Center), |ui| {
+                    if ui
+                        .button("Logs")
+                        .on_hover_text("Open logs")
+                        .clicked()
+                    {
+
+                    }
+
                     if let Some(last_action) = &self.last_action {
                         let msg = match &last_action.status {
                             LastActionStatus::Success(msg) => {
