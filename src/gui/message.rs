@@ -45,6 +45,7 @@ pub enum Message {
     LintMods(LintMods),
     SelfUpdate(SelfUpdate),
     FetchSelfUpdateProgress(FetchSelfUpdateProgress),
+    FetchSubscriptions(FetchSubscriptions),
 }
 
 impl Message {
@@ -58,6 +59,7 @@ impl Message {
             Self::LintMods(msg) => msg.receive(app),
             Self::SelfUpdate(msg) => msg.receive(app),
             Self::FetchSelfUpdateProgress(msg) => msg.receive(app),
+            Self::FetchSubscriptions(msg) => msg.receive(app),
         }
     }
 }
@@ -81,8 +83,9 @@ impl ResolveMods {
         let store = app.state.store.clone();
         let ctx = ctx.clone();
         let tx = app.tx.clone();
-        let handle = tokio::spawn(async move {
+        let handle: JoinHandle<()> = tokio::spawn(async move {
             let result = store.resolve_mods(&specs, false).await;
+            // NOTE: send out modio request??
             tx.send(Message::ResolveMods(Self {
                 rid,
                 specs,
@@ -728,4 +731,147 @@ async fn self_update_async(
     info!("update successful");
 
     Ok(original_exe_path)
+}
+
+#[derive(Debug)]
+pub struct FetchSubscriptions {
+    rid: RequestID,
+    modio_id: u32,
+    result: Result<String, Error>,
+}
+
+impl FetchSubscriptions {
+    pub fn send(
+        app: &mut App,
+        ctx: &egui::Context,
+        //specs: Vec<ModSpecification>,
+        //is_dependency: bool,
+
+        //rc: &mut RequestCounter,
+        //ctx: &egui::Context,
+        //tx: Sender<Message>,
+        oauth_token: &str,
+        modio_id: u32,
+    ) {
+        // let rid = rc.next();
+        // let ctx = ctx.clone();
+        let oauth_token = oauth_token.to_string();
+
+        // MessageHandle {
+        //     rid,
+        //     handle: tokio::task::spawn(async move {
+        //         let result = fetch_modio_subscriptions(oauth_token, modio_id).await;
+        //         tx.send(Message::FetchSubscriptions(FetchSubscriptions {
+        //             rid,
+        //             result,
+        //             modio_id,
+        //         }))
+        //         .await
+        //         .unwrap();
+        //         ctx.request_repaint();
+        //     }),
+        //     state: (),
+        // }
+
+        let rid = app.request_counter.next();
+        let ctx = ctx.clone();
+        let tx = app.tx.clone();
+        let handle: JoinHandle<()> = tokio::spawn(async move {
+            let result = fetch_modio_subscriptions(oauth_token).await;
+            // NOTE: send out modio request??
+            tx.send(Message::FetchSubscriptions(Self {
+                rid,
+                result,
+                modio_id,
+            }))
+            .await
+            .unwrap();
+            ctx.request_repaint();
+        });
+        app.last_action = None;
+        app.resolve_mod_rid = Some(MessageHandle {
+            rid,
+            handle,
+            state: (),
+        });
+    }
+
+    fn receive(self, app: &mut App) {
+        //let mut to_remove = None;
+
+        //if let Some(req) = app.fetch_mod_details_rid.get(&self.modio_id)
+        //    && req.rid == self.rid
+        //{
+            match self.result {
+                Ok(mod_details) => {
+                    info!("fetch mod details successful");
+                    //app.mod_details.insert(mod_details.r#mod.id, mod_details);
+                    //app.last_action_status =
+                    //    LastActionStatus::Success("fetch mod details complete".to_string());
+                }
+                Err(e) => {
+                    error!("fetch mod details failed");
+                    error!("{:#?}", e);
+                    //to_remove = Some(self.modio_id);
+                    //app.last_action_status =
+                    //    LastActionStatus::Failure("fetch mod details failed".to_string());
+                }
+            }
+        //}
+
+        //if let Some(id) = to_remove {
+        //    app.fetch_mod_details_rid.remove(&id);
+        //}
+    }
+}
+
+
+async fn fetch_modio_subscriptions(oauth_token: String) -> Result<String, modio::Error> {
+    // NOTE: temp solution because what the hell function do i call to get the modio object normally
+        use crate::providers::modio::{LoggingMiddleware, MODIO_DRG_ID}; 
+        use modio::{filter::prelude::*, Credentials, Modio, user};
+        use futures::TryStreamExt;
+        use modio::Error;
+
+        let credentials = Credentials::with_token("", oauth_token);
+        let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
+            .with::<LoggingMiddleware>(Default::default())
+            .build();
+        let modio = Modio::new(credentials, client.clone())?;
+    //
+
+    let something = modio.user();
+
+    // not actually relevant
+    // let extra_something = something.current().await?;
+    // if (extra_something.is_some()){
+    //     let curr_user: user::User = extra_something.unwrap();
+    //     info!(curr_user.name_id);
+    //     info!(curr_user.username);
+    // }
+
+    let filter = ModId::desc();
+    let subscriptions = something.subscriptions(filter);
+    let mut st = subscriptions.iter().await?;
+
+    // Stream of `Mod`
+    while let Some(mod_) = st.try_next().await? {
+        println!("{}. {}", mod_.id, mod_.name);
+    }
+
+    //let mod_ref = modio.mod_(MODIO_DRG_ID, modio_id);
+    //let r#mod = mod_ref.clone().get().await?;
+
+    //let filter = with_limit(10).order_by(modio::user::filters::files::Version::desc());
+    //let versions = mod_ref.clone().files().search(filter).first_page().await?;
+
+    //let thumbnail = client
+    //    .get(r#mod.logo.thumb_320x180.clone())
+    //    .send()
+    //    .await?
+    //    .bytes()
+    //    .await?
+    //    .to_vec();
+
+    Ok("test".to_owned())
 }
