@@ -733,10 +733,10 @@ async fn self_update_async(
     Ok(original_exe_path)
 }
 
+use modio::Error; // BAD! 
 #[derive(Debug)]
 pub struct FetchSubscriptions {
     rid: RequestID,
-    modio_id: u32,
     result: Result<String, Error>,
 }
 
@@ -744,34 +744,11 @@ impl FetchSubscriptions {
     pub fn send(
         app: &mut App,
         ctx: &egui::Context,
-        //specs: Vec<ModSpecification>,
-        //is_dependency: bool,
-
-        //rc: &mut RequestCounter,
-        //ctx: &egui::Context,
-        //tx: Sender<Message>,
         oauth_token: &str,
-        modio_id: u32,
     ) {
         // let rid = rc.next();
         // let ctx = ctx.clone();
         let oauth_token = oauth_token.to_string();
-
-        // MessageHandle {
-        //     rid,
-        //     handle: tokio::task::spawn(async move {
-        //         let result = fetch_modio_subscriptions(oauth_token, modio_id).await;
-        //         tx.send(Message::FetchSubscriptions(FetchSubscriptions {
-        //             rid,
-        //             result,
-        //             modio_id,
-        //         }))
-        //         .await
-        //         .unwrap();
-        //         ctx.request_repaint();
-        //     }),
-        //     state: (),
-        // }
 
         let rid = app.request_counter.next();
         let ctx = ctx.clone();
@@ -782,7 +759,6 @@ impl FetchSubscriptions {
             tx.send(Message::FetchSubscriptions(Self {
                 rid,
                 result,
-                modio_id,
             }))
             .await
             .unwrap();
@@ -799,25 +775,23 @@ impl FetchSubscriptions {
     fn receive(self, app: &mut App) {
         //let mut to_remove = None;
 
-        //if let Some(req) = app.fetch_mod_details_rid.get(&self.modio_id)
-        //    && req.rid == self.rid
-        //{
+        if Some(self.rid) == app.resolve_mod_rid.as_ref().map(|r| r.rid) {
             match self.result {
                 Ok(mod_details) => {
-                    info!("fetch mod details successful");
+                    info!("fetch subscriptions successful");
                     //app.mod_details.insert(mod_details.r#mod.id, mod_details);
                     //app.last_action_status =
                     //    LastActionStatus::Success("fetch mod details complete".to_string());
                 }
                 Err(e) => {
-                    error!("fetch mod details failed");
+                    error!("fetch subscriptions failed");
                     error!("{:#?}", e);
                     //to_remove = Some(self.modio_id);
                     //app.last_action_status =
                     //    LastActionStatus::Failure("fetch mod details failed".to_string());
                 }
             }
-        //}
+        }
 
         //if let Some(id) = to_remove {
         //    app.fetch_mod_details_rid.remove(&id);
@@ -831,7 +805,6 @@ async fn fetch_modio_subscriptions(oauth_token: String) -> Result<String, modio:
         use crate::providers::modio::{LoggingMiddleware, MODIO_DRG_ID}; 
         use modio::{filter::prelude::*, Credentials, Modio, user};
         use futures::TryStreamExt;
-        use modio::Error;
 
         let credentials = Credentials::with_token("", oauth_token);
         let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
