@@ -744,17 +744,22 @@ impl FetchSubscriptions {
     pub fn send(
         app: &mut App,
         ctx: &egui::Context,
-        oauth_token: &str,
+        //oauth_token: &str,
     ) {
         // let rid = rc.next();
         // let ctx = ctx.clone();
-        let oauth_token = oauth_token.to_string();
+        let mut _oauth_token: Option<String> = None;
+        if let Some(modio_provider_params) = app.state.config.provider_parameters.get("modio")
+        && let Some(oauth_token) = modio_provider_params.get("oauth")
+        {
+            _oauth_token = Some(oauth_token.to_string());
+        }
 
         let rid = app.request_counter.next();
         let ctx = ctx.clone();
         let tx = app.tx.clone();
         let handle: JoinHandle<()> = tokio::spawn(async move {
-            let result = fetch_modio_subscriptions(oauth_token).await;
+            let result = fetch_modio_subscriptions(_oauth_token.unwrap()).await;
             // NOTE: send out modio request??
             tx.send(Message::FetchSubscriptions(Self {
                 rid,

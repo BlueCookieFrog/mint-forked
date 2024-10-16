@@ -1911,13 +1911,11 @@ impl eframe::App for App {
                 // this is doody code, assignments in conditions is no no
                 let mut doody:Option<&String> = None;
 
-                if let Some(modio_provider_params) = self.state.config.provider_parameters.get("modio")
-                && let Some(oauth_token) = modio_provider_params.get("oauth")
-                && ui.button("Subscriptions")
+                if ui.button("Subscriptions")
                     .on_hover_text("epic feature! no way!!!")
                     .clicked() 
                 {
-                    message::FetchSubscriptions::send(self, ctx, doody.unwrap());
+                    message::FetchSubscriptions::send(self, ctx);
                 }
                 // ideally, there should be some error checking to determine whether we've already imported our local mods
                 // because typically users will click buttons for no reason, potentially ruining their current profile
