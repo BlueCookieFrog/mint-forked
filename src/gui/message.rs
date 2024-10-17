@@ -737,7 +737,7 @@ use modio::Error; // BAD!
 #[derive(Debug)]
 pub struct FetchSubscriptions {
     rid: RequestID,
-    result: Result<String, Error>,
+    result: Result<Vec<String>, Error>,
 }
 
 impl FetchSubscriptions {
@@ -753,6 +753,9 @@ impl FetchSubscriptions {
         && let Some(oauth_token) = modio_provider_params.get("oauth")
         {
             _oauth_token = Some(oauth_token.to_string());
+        } else {
+            error!("ouath token fail");
+            return;
         }
 
         let rid = app.request_counter.next();
@@ -760,7 +763,7 @@ impl FetchSubscriptions {
         let tx = app.tx.clone();
         let handle: JoinHandle<()> = tokio::spawn(async move {
             let result = fetch_modio_subscriptions(_oauth_token.unwrap()).await;
-            // NOTE: send out modio request??
+            
             tx.send(Message::FetchSubscriptions(Self {
                 rid,
                 result,
@@ -770,7 +773,7 @@ impl FetchSubscriptions {
             ctx.request_repaint();
         });
         app.last_action = None;
-        app.resolve_mod_rid = Some(MessageHandle {
+        app.fetch_subscriptions_rid = Some(MessageHandle {
             rid,
             handle,
             state: (),
@@ -778,37 +781,38 @@ impl FetchSubscriptions {
     }
 
     fn receive(self, app: &mut App) {
-        //let mut to_remove = None;
-
-        if Some(self.rid) == app.resolve_mod_rid.as_ref().map(|r| r.rid) {
+        if Some(self.rid) == app.fetch_subscriptions_rid.as_ref().map(|r| r.rid) {
             match self.result {
-                Ok(mod_details) => {
+                Ok(mod_list) => {
                     info!("fetch subscriptions successful");
-                    //app.mod_details.insert(mod_details.r#mod.id, mod_details);
-                    //app.last_action_status =
-                    //    LastActionStatus::Success("fetch mod details complete".to_string());
+
+                    let mut result: String = "".to_string();
+                    for entry in mod_list.iter(){
+                        result += entry;
+                        result += "\n";
+                    }
+
+                    app.resolve_mod = result;
+                    // we need the ctx object to call this, but just shoving it into the textbox should be good enough
+                    //ResolveMods::send(app, ctx, app.parse_mods(), false); 
+                    app.last_action = Some(LastAction::success("subscriptions fetching complete".to_string()));
                 }
                 Err(e) => {
                     error!("fetch subscriptions failed");
                     error!("{:#?}", e);
-                    //to_remove = Some(self.modio_id);
-                    //app.last_action_status =
-                    //    LastActionStatus::Failure("fetch mod details failed".to_string());
+                    app.last_action = Some(LastAction::failure(e.to_string()));
                 }
             }
+            app.fetch_subscriptions_rid = None;
         }
-
-        //if let Some(id) = to_remove {
-        //    app.fetch_mod_details_rid.remove(&id);
-        //}
     }
 }
 
 
-async fn fetch_modio_subscriptions(oauth_token: String) -> Result<String, modio::Error> {
+async fn fetch_modio_subscriptions(oauth_token: String) -> Result<Vec<String>, modio::Error> {
     // NOTE: temp solution because what the hell function do i call to get the modio object normally
         use crate::providers::modio::{LoggingMiddleware, MODIO_DRG_ID}; 
-        use modio::{filter::prelude::*, Credentials, Modio, user};
+        use modio::{filter::prelude::*, Credentials, Modio};
         use futures::TryStreamExt;
 
         let credentials = Credentials::with_token("", oauth_token);
@@ -818,38 +822,19 @@ async fn fetch_modio_subscriptions(oauth_token: String) -> Result<String, modio:
         let modio = Modio::new(credentials, client.clone())?;
     //
 
-    let something = modio.user();
-
-    // not actually relevant
-    // let extra_something = something.current().await?;
-    // if (extra_something.is_some()){
-    //     let curr_user: user::User = extra_something.unwrap();
-    //     info!(curr_user.name_id);
-    //     info!(curr_user.username);
-    // }
-
-    let filter = ModId::desc();
-    let subscriptions = something.subscriptions(filter);
+    // create the user subscrtions query & begin iterating
+    let subscriptions = modio.user().subscriptions(ModId::desc());
     let mut st = subscriptions.iter().await?;
 
-    // Stream of `Mod`
+    // process each entry into an exportable list of URLs
+    let mut result: Vec<String> = Vec::new();
     while let Some(mod_) = st.try_next().await? {
-        println!("{}. {}", mod_.id, mod_.name);
+        // exclude subscriptions that aren't for DRG
+        if mod_.game_id == MODIO_DRG_ID{
+            // profile URL is the url to the mod page
+            result.push(mod_.profile_url.as_str().to_string());
+        }
     }
 
-    //let mod_ref = modio.mod_(MODIO_DRG_ID, modio_id);
-    //let r#mod = mod_ref.clone().get().await?;
-
-    //let filter = with_limit(10).order_by(modio::user::filters::files::Version::desc());
-    //let versions = mod_ref.clone().files().search(filter).first_page().await?;
-
-    //let thumbnail = client
-    //    .get(r#mod.logo.thumb_320x180.clone())
-    //    .send()
-    //    .await?
-    //    .bytes()
-    //    .await?
-    //    .to_vec();
-
-    Ok("test".to_owned())
+    Ok(result)
 }

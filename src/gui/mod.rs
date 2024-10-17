@@ -132,6 +132,7 @@ pub struct App {
     integrate_rid: Option<MessageHandle<HashMap<ModSpecification, SpecFetchProgress>>>,
     update_rid: Option<MessageHandle<()>>,
     check_updates_rid: Option<MessageHandle<()>>,
+    fetch_subscriptions_rid: Option<MessageHandle<()>>,
     has_run_init: bool,
     request_counter: RequestCounter,
     window_provider_parameters: Option<WindowProviderParameters>,
@@ -233,6 +234,7 @@ impl App {
             integrate_rid: None,
             update_rid: None,
             check_updates_rid: None,
+            fetch_subscriptions_rid: None,
             has_run_init: false,
             window_provider_parameters: None,
             search_string: Default::default(),
@@ -1908,26 +1910,24 @@ impl eframe::App for App {
                     self.lints_toggle_window = Some(WindowLintsToggle);
                 }
                 
-                // this is doody code, assignments in conditions is no no
-                let mut doody:Option<&String> = None;
-
                 if ui.button("Subscriptions")
                     .on_hover_text("epic feature! no way!!!")
                     .clicked() 
                 {
                     message::FetchSubscriptions::send(self, ctx);
                 }
-                // ideally, there should be some error checking to determine whether we've already imported our local mods
-                // because typically users will click buttons for no reason, potentially ruining their current profile
+                // NOTE: this is irrelevant code from last time i was working on this project
                 if ui.button("Import mods")
                     .on_hover_text("Import mods that were previously installed with mod.io")
                     .clicked()
                 {
                     use std::path::Path;
                     // im not really sure how you'd enforce this to target specifically the OS drive, or how you'd use this with a linux OS
+                    // NOTE: theres a function somewhere in this thing that already fetches the mods path
                     let local_mods_path = Path::new("C:\\Users\\Public\\mod.io\\2475\\mods");
                     if ! local_mods_path.exists(){
                         // if that path failed, then open a file browser prompt to allow the user to find the path themselves
+                       
                     }
                     
                     // check again just in case they either aborted 
