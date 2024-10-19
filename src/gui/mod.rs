@@ -2039,7 +2039,7 @@ impl eframe::App for App {
                         });
 
                         let profile = self.state.mod_data.active_profile.clone();
-
+                        ui.add_space(2.0);
                         ui.horizontal(|ui| {
                             ui.label("Sort by: ");
 
@@ -2093,6 +2093,16 @@ impl eframe::App for App {
                                 });
                             });
 
+                            ui.add(egui::Separator::default().vertical());
+                            // ui.label("Display: ");
+                            egui::ComboBox::from_id_salt("display")
+                            .selected_text("Display filters")
+                            .show_ui(ui, |ui|{
+                                ui.checkbox(&mut self.show_version_combo, "Version select");
+                                ui.checkbox(&mut self.show_copy_url, "Copy URL");
+                                ui.checkbox(&mut self.show_mod_type_tags, "Mod tags");
+                            });
+
                             ui.add_space(16.);
                             // TODO: actually implement mod groups.
                             let search_string = &mut self.search_string;
@@ -2135,12 +2145,7 @@ impl eframe::App for App {
                             }
                         });
 
-                        ui.horizontal(|ui| {
-                            ui.label("Display: ");
-                            ui.checkbox(&mut self.show_version_combo, "Version select");
-                            ui.checkbox(&mut self.show_copy_url, "Copy URL");
-                            ui.checkbox(&mut self.show_mod_type_tags, "Mod tags");
-                        });
+                        ui.separator();
 
                         self.ui_profile(ui, &profile);
 
