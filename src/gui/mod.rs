@@ -4,10 +4,9 @@ mod named_combobox;
 mod request_counter;
 mod toggle_switch;
 
-//#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
 use std::ops::{Deref, RangeInclusive};
 use std::time::{Duration, Instant, SystemTime};
 use std::{
@@ -19,11 +18,10 @@ use std::{
 use eframe::egui::{Button, CollapsingHeader, RichText, Visuals};
 use eframe::epaint::{Pos2, Vec2};
 use eframe::{
-    egui::{FontSelection, Layout, TextFormat, Ui, Id},
+    egui::{FontSelection, Layout, TextFormat, Ui, Id, UiBuilder},
     emath::{Align, Align2},
     epaint::{text::LayoutJob, Color32, Stroke},
 };
-use egui::UiBuilder;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use itertools::Itertools as _;
 use mint_lib::error::ResultExt as _;
@@ -157,6 +155,7 @@ pub struct App {
     show_version_combo:  bool,
     show_copy_url:  bool,
     show_mod_type_tags: bool,
+    show_log_window: bool,
 }
 
 #[derive(Default)]
@@ -257,6 +256,7 @@ impl App {
             show_version_combo: true,
             show_copy_url: true,
             show_mod_type_tags: true,
+            show_log_window: false,
         })
     }
 
@@ -1925,8 +1925,48 @@ impl eframe::App for App {
                         .button("Logs")
                         .on_hover_text("Open logs")
                         .clicked()
-                    {
+                        {
+                            self.show_log_window = true;
+                        }
 
+                    if self.show_log_window {
+                        ctx.show_viewport_immediate(
+                            egui::ViewportId::from_hash_of("logs"),
+                            egui::ViewportBuilder::default()
+                                .with_title("Logs")
+                                .with_inner_size([600.0, 400.0]),
+                            |ctx, _class| {
+                                let log_path = self.state.dirs.data_dir.join("mint.log").clone();
+                                let contents = fs::read_to_string(log_path)
+                                            .expect("Didn't find log file");
+
+                                egui::CentralPanel::default().show(ctx, |ui| {
+                                    let scroll_height =
+                                    (ui.available_height() - 30.0).clamp(0.0, f32::INFINITY);
+                                    // FIXME Scroll bar doesn't stick to the right side of the window
+                                    // but it appears and the end of the longest line
+                                    egui::ScrollArea::vertical()
+                                        .max_height(scroll_height)
+                                        .show(ui, |ui|{
+                                            ui.add(egui::Label::new(contents));
+                                        });
+                                });
+
+                                egui::TopBottomPanel::bottom("log_panel")
+                                .exact_height(27.0)
+                                .show(ctx, |ui| {
+                                    ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                                        if ui.button("Open logs file").clicked() {
+                                            let _ = opener::open(self.state.dirs.data_dir.join("mint.log"));
+                                        };
+                                    });
+                                });
+
+                                if ctx.input(|i| i.viewport().close_requested()) {
+                                    // Tell parent viewport that we should not show next frame:
+                                    self.show_log_window = false;
+                                }
+                            });
                     }
 
                     if let Some(last_action) = &self.last_action {
@@ -1949,7 +1989,9 @@ impl eframe::App for App {
                             }
                         };
                         ui.ctx().request_repaint(); // for continuously updating time
-                        ui.label(format!("({}): {}", last_action.timeago(), msg));
+                        ui.add(egui::Label::new(format!("({}): {}", last_action.timeago(), msg))
+                                .truncate()
+                        );
                     }
                 });
             });
