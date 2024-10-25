@@ -1777,6 +1777,7 @@ impl eframe::App for App {
                                         .unwrap();
                                 });
                             }
+                            ui.add(egui::Separator::default().vertical().shrink(4.0));
                         }
 
                         ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
