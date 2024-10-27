@@ -4,6 +4,7 @@ pub mod modio;
 #[macro_use]
 pub mod cache;
 pub mod mod_store;
+pub mod steam;
 
 use snafu::prelude::*;
 use tokio::sync::mpsc::Sender;
@@ -16,6 +17,7 @@ use std::sync::{Arc, RwLock};
 pub use cache::*;
 pub use mint_lib::mod_info::*;
 pub use mod_store::*;
+pub use steam::*;
 
 use self::modio::DrgModioError;
 

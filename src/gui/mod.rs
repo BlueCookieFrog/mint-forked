@@ -1910,6 +1910,66 @@ impl eframe::App for App {
                     self.lints_toggle_window = Some(WindowLintsToggle);
                 }
                 
+                if ui.button("Moddy")
+                    .on_hover_text("epic moddy! no way!!!")
+                    .clicked() 
+                {
+                    //let modio = modio::Modio::new();
+
+
+
+
+
+                    use std::io::{self, Write};
+
+                    use modio::{Credentials, Modio, Result};
+
+                    async fn doody_ddo() -> Result<()> {
+                        print!("doody doo func!!!");
+                        use crate::providers::modio::LoggingMiddleware; 
+                        use modio::{Credentials, Modio};
+                
+                        let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
+                            .with::<LoggingMiddleware>(Default::default())
+                            .build();
+
+                        let modio = Modio::new(Credentials::new("b4aab104219c1f6d752beb37e483b17b"), client)?; // retrieved from DRG exe?? not sure if putting this in plain text is a bad thing
+
+                        use modio::auth::SteamOptions;
+                        let opts = SteamOptions::new("CAIQsfufjAEYQSCPASrAARn2+nEi6G1doURK2vZSUhkSKsFlEyTuFyQfFIHl9c5jF6e3Z/czxBR5RaqrgfasBIGNpZ+SEPkwl7Jkg+TK6imj21J2frRWvnbLpBfEVKkoThD3HNIL2tpHY0U9KUWs5GlVmfqfy2+i9OwH1CdsAycSo3/Sar2zSvoNJXu7Wx1V8KtdEAri8sBIHDUEA+DvnZAdONKQFhm/spkLQ+p7+hHcf248oBMIiQsg8l4fO1yfrwhc+TaMtv8+f4rgVUUwfQ==");
+                        let token = modio.auth().external(opts).await?;
+
+                        let _modio = modio.with_credentials(token);
+
+                        let doody = _modio.user();
+
+                        let super_doody = doody.current().await?.unwrap();
+
+                        print!("found user: {}", super_doody.username);
+                        print!("found user: {}", super_doody.profile_url);
+                        Ok(())
+                    }
+                    async fn run_doody(){
+                        print!("run doody func!!!");
+                        let thing = doody_ddo().await;
+                        if thing.is_err(){
+                            print!("failed to run thingo");
+                        }else {
+                            print!("thingo success");
+                        }
+                    }
+                    //let _testing = run_doody();
+                    print!("running moddy!!!");
+
+
+                    let rt = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap();
+
+                    let res: () = rt.block_on(async { run_doody().await });
+                }
+
                 if ui.button("Subscriptions")
                     .on_hover_text("epic feature! no way!!!")
                     .clicked() 

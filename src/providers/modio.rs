@@ -273,7 +273,7 @@ pub trait DrgModio: Sync + Send {
 #[async_trait::async_trait]
 impl DrgModio for modio::Modio {
     fn with_parameters(parameters: &HashMap<String, String>) -> Result<Self, DrgModioError> {
-        let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
+        let client: reqwest_middleware::ClientWithMiddleware = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
             .with::<LoggingMiddleware>(Default::default())
             .build();
         let modio = modio::Modio::new(

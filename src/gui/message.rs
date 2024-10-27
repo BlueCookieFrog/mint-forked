@@ -83,9 +83,8 @@ impl ResolveMods {
         let store = app.state.store.clone();
         let ctx = ctx.clone();
         let tx = app.tx.clone();
-        let handle: JoinHandle<()> = tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             let result = store.resolve_mods(&specs, false).await;
-            // NOTE: send out modio request??
             tx.send(Message::ResolveMods(Self {
                 rid,
                 specs,
