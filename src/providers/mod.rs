@@ -17,7 +17,6 @@ use std::sync::{Arc, RwLock};
 pub use cache::*;
 pub use mint_lib::mod_info::*;
 pub use mod_store::*;
-pub use steam::*;
 
 use self::modio::DrgModioError;
 

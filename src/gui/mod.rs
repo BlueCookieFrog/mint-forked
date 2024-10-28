@@ -4,6 +4,7 @@ mod named_combobox;
 mod request_counter;
 mod toggle_switch;
 
+
 //#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use std::cmp::Ordering;
@@ -1910,6 +1911,23 @@ impl eframe::App for App {
                     self.lints_toggle_window = Some(WindowLintsToggle);
                 }
                 
+                if ui.button("TEST")
+                    .on_hover_text("TEST MY EPIC MOD MOD")
+                    .clicked() 
+                {
+
+                    use crate::providers::steam; 
+                    unsafe
+                    {
+                        let init_result = steam::steam_main();
+                        if init_result.is_err(){
+                            print!("\nBOLD: {}\n\n", init_result.unwrap_err());
+                        } else  {
+                            print!("\nBOLD: test succcess!!!\n\n");
+                        }
+                    }
+                    
+                }
                 if ui.button("Moddy")
                     .on_hover_text("epic moddy! no way!!!")
                     .clicked() 
