@@ -180,7 +180,6 @@ pub struct steam_data{
 
 // FINISHED
 unsafe fn SteamAPI_IsSteamRunning() -> bool{
-
     let mut proc_key: HKEY = 0;
     if RegOpenKeyExA(HKCU, "Software\\Valve\\Steam\\ActiveProcess".as_ptr(), 0, 0x20219, &mut proc_key as *mut HKEY) == 0{
         return false;
@@ -211,14 +210,43 @@ unsafe fn SteamAPI_IsSteamRunning() -> bool{
     return false;
 }
 
+unsafe fn steam_write_install_path() -> Vec<u8>{
+    let mut proc_key: HKEY = 0;
+    if RegOpenKeyExA(HKCU, "Software\\Valve\\Steam\\ActiveProcess".as_ptr(), 0, 0x20219, &mut proc_key as *mut HKEY) == 0{
+        return vec![0u8; 0];
+    }
+    let mut out_proc_path = [0u8; 0x410];
+    let mut cbdata:u32 = 0x410;
+    let mut _type:i32 = 0;
+    if RegQueryValueExA(proc_key, "SteamClientDll64".as_ptr(), 0, &mut _type as *mut i32, out_proc_path.as_mut_ptr(), &mut cbdata as *mut u32) == 0 {
+        RegCloseKey(proc_key);
+        return vec![0u8; 0];
+    }
+    RegCloseKey(proc_key);
 
+    // manually terminate wstring
+    out_proc_path[cbdata as usize] = 0;
+
+    // alternative method to get filename if that failed (pretty sure this cant work with our setup)
+    // if (!out_buf[0]) {
+    //     WCHAR alt_proc_path[0x103];
+    //     alt_proc_path[0] = L'\0';
+    //     if (!GetModuleFileNameW(GetModuleHandleA("steamclient64.dll"), alt_proc_path, 0x104) < 0x104){
+    //         return false;
+    //     }
+    //     if (!WideCharToMultiByte(0xfde9, 0, alt_proc_path, -1, out_buf, 0x410, 0, 0)){
+    //         return false;
+    //     }
+    // }
+    return out_proc_path.to_vec();
+}
 unsafe fn init_steam_client(steam: &mut steam_data) -> i32{
     if SteamAPI_IsSteamRunning() == false{
         return 8;
     }
 
     let steam_install_path = steam_write_install_path();
-    if steam_install_path == 0 {
+    if steam_install_path.len() == 0{
         return 9;
     }
     
@@ -234,7 +262,7 @@ unsafe fn init_steam_client(steam: &mut steam_data) -> i32{
     //let steamclient_library: HMODULE = LoadLibraryExW(steamclient_path_wstr, 0, 8);
 
     //if (steamclient_library == 0) {
-        let steamclient_library = LoadLibraryExA(steam_install_path, 0, 8);
+        let steamclient_library = LoadLibraryExA(steam_install_path.as_ptr(), 0, 8);
     //}
     if steamclient_library == 0{
         return 11;
