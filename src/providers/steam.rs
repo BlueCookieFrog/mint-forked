@@ -91,46 +91,52 @@ pub struct ISteamClient__bindgen_vtable{
     ConnectToGlobalUser:            *const extern "C" fn(*mut ISteamClient, HSteamPipe) -> HSteamUser,
     CreateLocalUser:                *const extern "C" fn(*mut ISteamClient, *mut HSteamPipe, EAccountType) -> HSteamUser,
     ReleaseUser:                    *const extern "C" fn(*mut ISteamClient, HSteamPipe, HSteamUser),
-    GetISteamUser:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> *mut ISteamUser,
-    GetISteamGameServer:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamGameServer
+    GetISteamUser:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> *mut ISteamUser,
+    GetISteamGameServer:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameServer
     SetLocalIPBinding:              *const extern "C" fn(*mut ISteamClient, &SteamIPAddress_t, u16), // not sure if this one is right????
-    GetISteamFriends:               *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamFriends,
-    GetISteamUtils:                 *const extern "C" fn(*mut ISteamClient, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamUtils,
-    GetISteamMatchmaking:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamMatchmaking,
-    GetISteamMatchmakingServers:    *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamMatchmakingServers,
-    GetISteamGenericInterface:      *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: void,
-    GetISteamUserStats:             *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamUserStats,
-    GetISteamGameServerStats:       *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamGameServerStats,
-    GetISteamApps:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamApps,
-    GetISteamNetworking:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamNetworking,
-    GetISteamRemoteStorage:         *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamRemoteStorage,
-    GetISteamScreenshots:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamScreenshots,
-    GetISteamGameSearch:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamGameSearch,
+    GetISteamFriends:               *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamFriends,
+    GetISteamUtils:                 *const extern "C" fn(*mut ISteamClient, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUtils,
+    GetISteamMatchmaking:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMatchmaking,
+    GetISteamMatchmakingServers:    *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMatchmakingServers,
+    GetISteamGenericInterface:      *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: void,
+    GetISteamUserStats:             *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUserStats,
+    GetISteamGameServerStats:       *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameServerStats,
+    GetISteamApps:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamApps,
+    GetISteamNetworking:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamNetworking,
+    GetISteamRemoteStorage:         *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamRemoteStorage,
+    GetISteamScreenshots:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamScreenshots,
+    GetISteamGameSearch:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameSearch,
     RunFrame:                       *const extern "C" fn(*mut ISteamClient),
     GetIPCCallCount:                *const extern "C" fn(*mut ISteamClient) -> u32,
     SetWarningMessageHook:          *const extern "C" fn(*mut ISteamClient, SteamAPIWarningMessageHook_t),
     BShutdownIfAllPipesClosed:      *const extern "C" fn(*mut ISteamClient) -> bool,
-    GetISteamHTTP:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamHTTP,
-    GetISteamController:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamController,
-    GetISteamUGC:                   *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamUGC,
-    GetISteamMusic:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamMusic,
-    GetISteamMusicRemote:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamMusicRemote,
-    GetISteamHTMLSurface:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamHTMLSurface,
+    GetISteamHTTP:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamHTTP,
+    GetISteamController:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamController,
+    GetISteamUGC:                   *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUGC,
+    GetISteamMusic:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMusic,
+    GetISteamMusicRemote:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMusicRemote,
+    GetISteamHTMLSurface:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamHTMLSurface,
     DEPRECATED_Set_SteamAPI_CPostAPIResultInProcess:    *const extern "C" fn(*mut ISteamClient, UNK_PTR), // p2: void (*)()
     DEPRECATED_Remove_SteamAPI_CPostAPIResultInProcess: *const extern "C" fn(*mut ISteamClient, UNK_PTR), // p2: void (*)()
     Set_SteamAPI_CCheckCallbackRegisteredInProcess:     *const extern "C" fn(*mut ISteamClient, SteamAPI_CheckCallbackRegistered_t),
-    GetISteamInventory:             *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamInventory,
-    GetISteamVideo:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamVideo,
-    GetISteamParentalSettings:      *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamParentalSettings,
-    GetISteamInput:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamInput,
-    ISteamParties:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: GetISteamParties,
-    GetISteamRemotePlay:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamRemotePlay,
+    GetISteamInventory:             *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamInventory,
+    GetISteamVideo:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamVideo,
+    GetISteamParentalSettings:      *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamParentalSettings,
+    GetISteamInput:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamInput,
+    ISteamParties:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: GetISteamParties,
+    GetISteamRemotePlay:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamRemotePlay,
     DestroyAllInterfaces:           *const extern "C" fn(*mut ISteamClient),
 }
 pub unsafe fn ISteamClient_CreateSteamPipe(_self: *mut ISteamClient) -> HSteamPipe{ return (*(*(*_self).vtable_).CreateSteamPipe)(_self); }
 pub unsafe fn ISteamClient_ConnectToGlobalUser(_self: *mut ISteamClient, pipe: HSteamPipe) -> HSteamUser{ return (*(*(*_self).vtable_).ConnectToGlobalUser)(_self, pipe); }
-pub unsafe fn ISteamClient_GetISteamGenericInterface(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *mut u8) -> UNK_PTR{ return (*(*(*_self).vtable_).GetISteamGenericInterface)(_self, user, pipe, interface); }
-pub unsafe fn ISteamClient_GetISteamUser(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *mut u8) -> *mut ISteamUser{ return (*(*(*_self).vtable_).GetISteamUser)(_self, user, pipe, interface); }
+pub unsafe fn ISteamClient_GetISteamGenericInterface(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *const u8) -> UNK_PTR{ return (*(*(*_self).vtable_).GetISteamGenericInterface)(_self, user, pipe, interface); }
+pub unsafe fn ISteamClient_GetISteamUser(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *const u8) -> *mut ISteamUser{ return (*(*(*_self).vtable_).GetISteamUser)(_self, user, pipe, interface); }
+pub unsafe fn ISteamClient_ReleaseUser(_self: *mut ISteamClient, pipe: HSteamPipe, user: HSteamUser) { (*(*(*_self).vtable_).ReleaseUser)(_self, pipe, user); }
+pub unsafe fn ISteamClient_BReleaseSteamPipe(_self: *mut ISteamClient, pipe: HSteamPipe) -> bool{ return (*(*(*_self).vtable_).BReleaseSteamPipe)(_self, pipe); }
+pub unsafe fn ISteamClient_BShutdownIfAllPipesClosed(_self: *mut ISteamClient) -> bool{ return (*(*(*_self).vtable_).BShutdownIfAllPipesClosed)(_self); }
+
+
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ISteamClient {
@@ -142,6 +148,7 @@ pub struct ISteamClient {
 extern "stdcall" {
     pub fn LoadLibraryA(lpFileName: *const u8) -> UNK_PTR;
     pub fn GetProcAddress(hModule: HMODULE, lpProcName: *const u8) -> UNK_PTR;
+    pub fn FreeLibrary(hModule: HMODULE) -> bool;
 }
 
 
@@ -163,12 +170,31 @@ pub struct steam_data{
     DAT_steam_GetAPICallResult_func: GetAPICallResult_func,
 }
 
-fn init_steam_client() -> i32{
-    
-
-    return 0;
+unsafe fn init_steam_client(steam: &mut steam_data) -> i32{
+    1
 }
-fn SteamAPI_Shutdown(){}
+unsafe fn SteamAPI_Shutdown(steam: &mut steam_data){
+    if steam.DAT_steam_IPC_pipe != 0 && steam.DAT_steam_user != 0{
+        ISteamClient_ReleaseUser(steam.DAT_ISteamClient_ptr, steam.DAT_steam_IPC_pipe, steam.DAT_steam_user);
+        steam.DAT_steam_user = 0;}
+
+    if steam.DAT_steam_IPC_pipe != 0{
+        ISteamClient_BReleaseSteamPipe(steam.DAT_ISteamClient_ptr, steam.DAT_steam_IPC_pipe);
+        steam.DAT_steam_IPC_pipe = 0;}
+
+    if steam.DAT_steam_alt_IPC_pipe != 0 {
+        ISteamClient_BReleaseSteamPipe(steam.DAT_ISteamClient_ptr, steam.DAT_steam_alt_IPC_pipe);
+        steam.DAT_steam_alt_IPC_pipe = 0;}
+    steam.DAT_steam_client_ReleaseThreadLocalMemory = std::ptr::null_mut();
+
+    if steam.DAT_ISteamClient_ptr != std::ptr::null_mut(){
+        ISteamClient_BShutdownIfAllPipesClosed(steam.DAT_ISteamClient_ptr);
+        steam.DAT_ISteamClient_ptr = std::ptr::null_mut();}
+
+    if steam.DAT_steamclient_hmodule != 0{
+        FreeLibrary(steam.DAT_steamclient_hmodule);
+        steam.DAT_steamclient_hmodule = 0;}
+}
 unsafe fn init_steam() -> i32{
     let mut steam = steam_data {
         DAT_ISteamClient_ptr: std::ptr::null_mut(),
@@ -187,20 +213,20 @@ unsafe fn init_steam() -> i32{
         return 1;
     }
 
-    let result = init_steam_client();
-    if result != 0 {
-        return result;
-    }
+    // let result = init_steam_client(&steam);
+    // if result != 0 {
+    //     return result;
+    // }
 
     steam.DAT_steam_IPC_pipe = ISteamClient_CreateSteamPipe(steam.DAT_ISteamClient_ptr);
     if steam.DAT_steam_IPC_pipe == 0 {
-        SteamAPI_Shutdown();
+        SteamAPI_Shutdown(&mut steam);
         return 2;
     }
 
     steam.DAT_steam_user = ISteamClient_ConnectToGlobalUser(steam.DAT_ISteamClient_ptr, steam.DAT_steam_IPC_pipe);
     if steam.DAT_steam_user == 0 {
-        SteamAPI_Shutdown();
+        SteamAPI_Shutdown(&mut steam);
         return 3;
     }
 
@@ -220,15 +246,15 @@ unsafe fn init_steam() -> i32{
         steam.DAT_steam_alt_IPC_pipe = ISteamClient_CreateSteamPipe(steam.DAT_ISteamClient_ptr);
     }
     
-    let steam_utils = ISteamClient_GetISteamGenericInterface(steam.DAT_ISteamClient_ptr, 0, steam.DAT_steam_IPC_pipe, "SteamUtils010".as_mut_ptr()).cast::<ISteamUtils>();
+    let steam_utils = ISteamClient_GetISteamGenericInterface(steam.DAT_ISteamClient_ptr, 0, steam.DAT_steam_IPC_pipe, "SteamUtils010".as_ptr()).cast::<ISteamUtils>();
     if steam_utils == std::ptr::null_mut() {
-        SteamAPI_Shutdown();
+        SteamAPI_Shutdown(&mut steam);
         return 5;
     }
 
-    steam.DAT_ISteamUser_ptr = ISteamClient_GetISteamUser(steam.DAT_ISteamClient_ptr, steam.DAT_steam_user, steam.DAT_steam_IPC_pipe, "SteamUser023".as_mut_ptr());
+    steam.DAT_ISteamUser_ptr = ISteamClient_GetISteamUser(steam.DAT_ISteamClient_ptr, steam.DAT_steam_user, steam.DAT_steam_IPC_pipe, "SteamUser023".as_ptr());
     if steam.DAT_ISteamUser_ptr == std::ptr::null_mut() {
-        SteamAPI_Shutdown();
+        SteamAPI_Shutdown(&mut steam);
         return 6;
     }
 
@@ -239,18 +265,15 @@ unsafe fn init_steam() -> i32{
     const app_id:u32 = 0x00085E4E;
 
     if std::env::var("SteamAppId").is_err() {
-        std::env::set_var("SteamAppId", app_id.to_string());
-    }
+        std::env::set_var("SteamAppId", app_id.to_string());}
     if std::env::var("SteamGameId").is_err() {
         std::env::set_var("SteamGameId", app_id.to_string());
-        std::env::set_var("SteamOverlayGameId", app_id.to_string());
-    }
+        std::env::set_var("SteamOverlayGameId", app_id.to_string());}
     if std::env::var("SteamOverlayGameId").is_err() {
-        std::env::set_var("SteamOverlayGameId", app_id.to_string());
-    }
-    steam.DAT_steam_BGetCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_BGetCallback".as_mut_ptr()).cast::<BGetCallback_func>();
-    steam.DAT_steam_FreeLastCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_FreeLastCallback".as_mut_ptr()).cast::<FreeLastCallback_func>();
-    steam.DAT_steam_GetAPICallResult_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_GetAPICallResult".as_mut_ptr()).cast::<GetAPICallResult_func>();
+        std::env::set_var("SteamOverlayGameId", app_id.to_string());}
+    steam.DAT_steam_BGetCallback_func = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_BGetCallback".as_ptr()).cast::<BGetCallback_func>();
+    steam.DAT_steam_FreeLastCallback_func = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_FreeLastCallback".as_ptr()).cast::<FreeLastCallback_func>();
+    steam.DAT_steam_GetAPICallResult_func = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_GetAPICallResult".as_ptr()).cast::<GetAPICallResult_func>();
     return 0;
 }
 
