@@ -3,9 +3,7 @@ type SteamAPICall_t = u64;
 type HSteamPipe = i32;
 type HSteamUser = u32;
 type HMODULE = u64;
-
 type HAuthTicket = u32;
-
 type CGameID = u64;
 type CSteamID = u64;
 type AppId_t = u32;
@@ -17,10 +15,24 @@ type EDurationControlOnlineState = i32;
 type SteamAPIWarningMessageHook_t = u64;
 type SteamAPI_CheckCallbackRegistered_t = u64; // uhh i dont think this one is right
 
-#[repr(C)]
+type CreateInterface = *const extern "C" fn(*const u8, *mut i32) -> UNK_PTR;
+type Steam_IsKnownInterface = *const extern "C" fn(*const u8) -> bool;
+type client_ReleaseThreadLocalMemory = *const extern "C" fn(bool) -> UNK_PTR;
+type BGetCallback_func = *const extern "C" fn(HSteamPipe, *mut CallbackMsg_t) -> bool;
+type FreeLastCallback_func = *const extern "C" fn(HSteamPipe) -> bool;
+type GetAPICallResult_func = *const extern "C" fn(HSteamPipe, SteamAPICall_t, UNK_PTR, i32, i32, *mut bool) -> bool;
+    
+#[repr(C)] // TODO: just get rid of this entirely & replace with fillter
 struct SteamIPAddress_t { p1: u64, p2:u64, p3:u32} // should be 20 bytes
 
-type UNK_PTR = *mut u32;
+#[repr(C)]
+struct CallbackMsg_t{ m_hSteamUser: HSteamUser, m_iCallback: i32, m_pubParam: *mut u8, m_cubParam: i32 }
+
+type UNK_PTR = *mut u8;
+const PSZ_INTERNAL_CHECK_INTERFACE_VERSIONS: &str = "SteamUtils010\0SteamController008\0SteamInput006\0SteamUser023\0\0";
+
+
+
 
 #[repr(C)]
 pub struct ISteamUser__bindgen_vtable{
@@ -65,6 +77,14 @@ pub struct ISteamUser {
 }
 
 #[repr(C)]
+pub struct ISteamUtils__bindgen_vtable(::std::os::raw::c_void);
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct ISteamUtils {
+    pub vtable_: *const ISteamUtils__bindgen_vtable,
+}
+
+#[repr(C)]
 pub struct ISteamClient__bindgen_vtable{
     CreateSteamPipe:                *const extern "C" fn(*mut ISteamClient) -> HSteamPipe,
     BReleaseSteamPipe:              *const extern "C" fn(*mut ISteamClient, HSteamPipe) -> bool,
@@ -73,7 +93,7 @@ pub struct ISteamClient__bindgen_vtable{
     ReleaseUser:                    *const extern "C" fn(*mut ISteamClient, HSteamPipe, HSteamUser),
     GetISteamUser:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> *mut ISteamUser,
     GetISteamGameServer:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamGameServer
-    SetLocalIPBinding:              *const extern "C" fn(*mut ISteamClient, &SteamIPAddress_t, u16),
+    SetLocalIPBinding:              *const extern "C" fn(*mut ISteamClient, &SteamIPAddress_t, u16), // not sure if this one is right????
     GetISteamFriends:               *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamFriends,
     GetISteamUtils:                 *const extern "C" fn(*mut ISteamClient, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamUtils,
     GetISteamMatchmaking:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamMatchmaking,
@@ -107,13 +127,22 @@ pub struct ISteamClient__bindgen_vtable{
     GetISteamRemotePlay:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *mut u8) -> UNK_PTR, // out: ISteamRemotePlay,
     DestroyAllInterfaces:           *const extern "C" fn(*mut ISteamClient),
 }
-pub unsafe fn ISteamClient_CreateSteamPipe (_self: *mut ISteamClient) -> HSteamPipe{ return (*(*(*_self).vtable_).CreateSteamPipe)(_self); }
+pub unsafe fn ISteamClient_CreateSteamPipe(_self: *mut ISteamClient) -> HSteamPipe{ return (*(*(*_self).vtable_).CreateSteamPipe)(_self); }
+pub unsafe fn ISteamClient_ConnectToGlobalUser(_self: *mut ISteamClient, pipe: HSteamPipe) -> HSteamUser{ return (*(*(*_self).vtable_).ConnectToGlobalUser)(_self, pipe); }
+pub unsafe fn ISteamClient_GetISteamGenericInterface(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *mut u8) -> UNK_PTR{ return (*(*(*_self).vtable_).GetISteamGenericInterface)(_self, user, pipe, interface); }
+pub unsafe fn ISteamClient_GetISteamUser(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *mut u8) -> *mut ISteamUser{ return (*(*(*_self).vtable_).GetISteamUser)(_self, user, pipe, interface); }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ISteamClient {
     pub vtable_: *const ISteamClient__bindgen_vtable,
 }
 
+#[link(name = "kernel32")]
+#[link(name = "user32")]
+extern "stdcall" {
+    pub fn LoadLibraryA(lpFileName: *const u8) -> UNK_PTR;
+    pub fn GetProcAddress(hModule: HMODULE, lpProcName: *const u8) -> UNK_PTR;
+}
 
 
 
@@ -126,107 +155,107 @@ pub struct steam_data{
     DAT_ISteamUser_ptr: *mut ISteamUser,
     DAT_steamclient_hmodule: HMODULE,
     DAT_steam_alt_IPC_pipe: HSteamPipe,
-    DAT_steam_user: HSteamUser
+    DAT_steam_user: HSteamUser,
+
+    DAT_steam_client_ReleaseThreadLocalMemory: client_ReleaseThreadLocalMemory,
+    DAT_steam_BGetCallback_func: BGetCallback_func,
+    DAT_steam_FreeLastCallback_func: FreeLastCallback_func,
+    DAT_steam_GetAPICallResult_func: GetAPICallResult_func,
 }
 
 fn init_steam_client() -> i32{
     
 
-    // let callback:fn(*mut ISteamClient) -> i32  = SteamAPI_ISteamClient_CreateSteamPipe;
-
-    // callback();
     return 0;
 }
 fn SteamAPI_Shutdown(){}
-fn init_steam(interfaces: &str) -> i32{
-    let steam = steam_data {
+unsafe fn init_steam() -> i32{
+    let mut steam = steam_data {
         DAT_ISteamClient_ptr: std::ptr::null_mut(),
-        DAT_ISteamUser_ptr: std::ptr::null_mut(),
         DAT_steam_IPC_pipe: 0,
+        DAT_ISteamUser_ptr: std::ptr::null_mut(),
         DAT_steamclient_hmodule: 0,
         DAT_steam_alt_IPC_pipe: 0,
         DAT_steam_user: 0,
+        DAT_steam_client_ReleaseThreadLocalMemory: std::ptr::null_mut(),
+        DAT_steam_BGetCallback_func: std::ptr::null_mut(),
+        DAT_steam_FreeLastCallback_func: std::ptr::null_mut(),
+        DAT_steam_GetAPICallResult_func: std::ptr::null_mut(),
     };
 
-    if steam.DAT_ISteamClient_ptr != std::ptr::null_mut() {return 1;}
+    if steam.DAT_ISteamClient_ptr != std::ptr::null_mut() {
+        return 1;
+    }
 
     let result = init_steam_client();
-    if result != 0 {return result;}
-
+    if result != 0 {
+        return result;
+    }
 
     steam.DAT_steam_IPC_pipe = ISteamClient_CreateSteamPipe(steam.DAT_ISteamClient_ptr);
     if steam.DAT_steam_IPC_pipe == 0 {
         SteamAPI_Shutdown();
-        return 2;}
-
-    steam.DAT_steam_user = SteamAPI_ISteamClient_ConnectToGlobalUser(steam.DAT_ISteamClient_ptr, DAT_steam_IPC_pipe);
-    if !DAT_steam_user {
-        SteamReplace::SteamAPI_Shutdown();
-        return 3;}
-
-    // verify interface versions
-    if (pszInternalCheckInterfaceVersions) {
-        Steam_IsKnownInterface interface_check_func = (Steam_IsKnownInterface)GetProcAddress(DAT_steamclient_hmodule, "Steam_IsKnownInterface");
-        if (interface_check_func) {
-            while (*pszInternalCheckInterfaceVersions) {
-                if (!(*interface_check_func)(pszInternalCheckInterfaceVersions)) {
-                    SteamReplace::SteamAPI_Shutdown();
-                    return 4;}
-                // iterate string till we reach the next null terminator
-                while (*pszInternalCheckInterfaceVersions++);
-            }
-        }
+        return 2;
     }
 
-    if (!DAT_steamclient_ReleaseThreadLocalMemory) 
-        DAT_steam_alt_IPC_pipe = DAT_ISteamClient_ptr->CreateSteamPipe();
-    
-    let steam_utils:ISteamUtils* = (ISteamUtils*)DAT_ISteamClient_ptr->GetISteamGenericInterface(0, DAT_steam_IPC_pipe, "SteamUtils010");
-    if (!steam_utils) {
-        SteamReplace::SteamAPI_Shutdown();
-        return 5;}
+    steam.DAT_steam_user = ISteamClient_ConnectToGlobalUser(steam.DAT_ISteamClient_ptr, steam.DAT_steam_IPC_pipe);
+    if steam.DAT_steam_user == 0 {
+        SteamAPI_Shutdown();
+        return 3;
+    }
 
-    DAT_ISteamUser_ptr = DAT_ISteamClient_ptr->GetISteamUser(DAT_steam_IPC_pipe, DAT_steam_user, "SteamUser023");
-    if (!DAT_ISteamUser_ptr) {
-        SteamReplace::SteamAPI_Shutdown();
-        return 6;}
+    //let interface_str_ptr = PSZ_INTERNAL_CHECK_INTERFACE_VERSIONS;
+    // let interface_check_func: Steam_IsKnownInterface = (Steam_IsKnownInterface)GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_IsKnownInterface");
+    // if (interface_check_func) {
+    //     while (*interface_str_ptr) {
+    //         if (!(*interface_check_func)(interface_str_ptr)) {
+    //             SteamAPI_Shutdown();
+    //             return 4;}
+    //         // iterate string till we reach the next null terminator
+    //         while (*interface_str_ptr++);
+    //     }
+    // }
+
+    if steam.DAT_steam_client_ReleaseThreadLocalMemory == std::ptr::null_mut(){
+        steam.DAT_steam_alt_IPC_pipe = ISteamClient_CreateSteamPipe(steam.DAT_ISteamClient_ptr);
+    }
+    
+    let steam_utils = ISteamClient_GetISteamGenericInterface(steam.DAT_ISteamClient_ptr, 0, steam.DAT_steam_IPC_pipe, "SteamUtils010".as_mut_ptr()).cast::<ISteamUtils>();
+    if steam_utils == std::ptr::null_mut() {
+        SteamAPI_Shutdown();
+        return 5;
+    }
+
+    steam.DAT_ISteamUser_ptr = ISteamClient_GetISteamUser(steam.DAT_ISteamClient_ptr, steam.DAT_steam_user, steam.DAT_steam_IPC_pipe, "SteamUser023".as_mut_ptr());
+    if steam.DAT_ISteamUser_ptr == std::ptr::null_mut() {
+        SteamAPI_Shutdown();
+        return 6;
+    }
 
     // app_id:u32 = steam_utils->GetAppID();
     // if (!app_id) {
-    //     SteamReplace::SteamAPI_Shutdown();
+    //     SteamAPI_Shutdown();
     //     return 7;}
     const app_id:u32 = 0x00085E4E;
 
-    let str_buf: [u8];
-    if (!GetEnvironmentVariableA("SteamAppId", 0, 0)) {
-        memset(str_buf, 0, 32);
-        sprintf_s(str_buf, (size_t)32, "%u", app_id);
-        SetEnvironmentVariableA("SteamAppId", str_buf);
+    if std::env::var("SteamAppId").is_err() {
+        std::env::set_var("SteamAppId", app_id.to_string());
     }
-    if (!GetEnvironmentVariableA("SteamGameId", 0, 0)) {
-        memset(str_buf, 0, 32);
-        sprintf_s(str_buf, (size_t)32, "%llu", app_id);
-        SetEnvironmentVariableA("SteamGameId", str_buf);
-        SetEnvironmentVariableA("SteamOverlayGameId", str_buf);
+    if std::env::var("SteamGameId").is_err() {
+        std::env::set_var("SteamGameId", app_id.to_string());
+        std::env::set_var("SteamOverlayGameId", app_id.to_string());
     }
-    if (!GetEnvironmentVariableA("SteamOverlayGameId", 0, 0)) {
-        memset(str_buf, 0, 32);
-        sprintf_s(str_buf, (size_t)32, "%llu", app_id);
-        SetEnvironmentVariableA("SteamOverlayGameId", str_buf);
+    if std::env::var("SteamOverlayGameId").is_err() {
+        std::env::set_var("SteamOverlayGameId", app_id.to_string());
     }
-    DAT_steam_BGetCallback_func = (Steam_BGetCallback)GetProcAddress(DAT_steamclient_hmodule, "Steam_BGetCallback");
-    DAT_steam_FreeLastCallback_func = (Steam_FreeLastCallback)GetProcAddress(DAT_steamclient_hmodule, "Steam_FreeLastCallback");
-    DAT_steam_GetAPICallResult_func = (Steam_GetAPICallResult)GetProcAddress(DAT_steamclient_hmodule, "Steam_GetAPICallResult");
-
-    // not sure what our custom function would look like for this, if it even gets used??
-    //DAT_ISteamClient_ptr->Set_SteamAPI_CCheckCallbackRegisteredInProcess(Threaded::SteamAPI_CheckCallbackRegistered_t_func);
-    
+    steam.DAT_steam_BGetCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_BGetCallback".as_mut_ptr()).cast::<BGetCallback_func>();
+    steam.DAT_steam_FreeLastCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_FreeLastCallback".as_mut_ptr()).cast::<FreeLastCallback_func>();
+    steam.DAT_steam_GetAPICallResult_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_GetAPICallResult".as_mut_ptr()).cast::<GetAPICallResult_func>();
     return 0;
 }
 
-fn steam_main() -> Result<(), &'static str>{
-    const PSZ_INTERNAL_CHECK_INTERFACE_VERSIONS: &str = "SteamUtils010\0SteamController008\0SteamInput006\0SteamUser023\0\0";
-    match (init_steam(PSZ_INTERNAL_CHECK_INTERFACE_VERSIONS)) {
+unsafe fn steam_main() -> Result<(), &'static str>{
+    match (init_steam()) {
      1 => return Err("steam is already running"),
      2 => return Err("Cannot create IPC pipe to Steam client process.  Steam is probably not running."),
      3 => return Err("ConnectToGlobalUser failed."),
