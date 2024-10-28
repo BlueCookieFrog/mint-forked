@@ -14,6 +14,9 @@ type EBeginAuthSessionResult = i32;
 type EDurationControlOnlineState = i32;
 type SteamAPIWarningMessageHook_t = u64;
 type SteamAPI_CheckCallbackRegistered_t = u64; // uhh i dont think this one is right
+type HKEY = u64;
+type LSTATUS = i32;
+type HANDLE = u64;
 
 type CreateInterface = *const extern "C" fn(*const u8, *mut i32) -> UNK_PTR;
 type Steam_IsKnownInterface = *const extern "C" fn(*const u8) -> bool;
@@ -30,8 +33,10 @@ struct CallbackMsg_t{ m_hSteamUser: HSteamUser, m_iCallback: i32, m_pubParam: *m
 
 type UNK_PTR = *mut u8;
 const PSZ_INTERNAL_CHECK_INTERFACE_VERSIONS: &str = "SteamUtils010\0SteamController008\0SteamInput006\0SteamUser023\0\0";
-
-
+const HKCR:HKEY = 0xffffffff80000000; // HKEY_CLASSES_ROOT
+const HKCU:HKEY = 0xffffffff80000001; // HKEY_CURRENT_USER
+const HKLM:HKEY = 0xffffffff80000002; // HKEY_LOCAL_MACHINE
+const STILL_ACTIVE:i32 = 0x00000103;
 
 
 #[repr(C)]
@@ -146,14 +151,17 @@ pub struct ISteamClient {
 #[link(name = "kernel32")]
 #[link(name = "user32")]
 extern "stdcall" {
-    pub fn LoadLibraryA(lpFileName: *const u8) -> UNK_PTR;
+    pub fn LoadLibraryA(lpFileName: *const u8) -> HMODULE;
+    pub fn LoadLibraryExA( lpLibFileName: *const u8, hFile:u64, dwFlags: u32) -> HMODULE;
     pub fn GetProcAddress(hModule: HMODULE, lpProcName: *const u8) -> UNK_PTR;
     pub fn FreeLibrary(hModule: HMODULE) -> bool;
+    pub fn RegOpenKeyExA(hKey: HKEY, lpSubKey: *const u8, ulOptions:u32, samDesired:i32, phkResult:*mut HKEY) -> LSTATUS;
+    pub fn RegQueryValueExA(hKey: HKEY, lpValueName: *const u8, lpReserved:u64, lpType: *mut i32, lpData: *mut u8, lpcbData:*mut u32) -> LSTATUS;
+    pub fn RegCloseKey(hKey: HKEY) -> LSTATUS;
+    pub fn OpenProcess(dwDesiredAccess: i32, bInheritHandle: bool, dwProcessId:u32) -> HANDLE;
+    pub fn GetExitCodeProcess(hProcess: HANDLE, lpExitCode: *mut i32) -> bool;
+    pub fn CloseHandle(hObject: HANDLE) -> bool;
 }
-
-
-
-
 
 pub struct steam_data{
     DAT_ISteamClient_ptr: *mut ISteamClient,
@@ -170,8 +178,85 @@ pub struct steam_data{
     DAT_steam_GetAPICallResult_func: GetAPICallResult_func,
 }
 
+// FINISHED
+unsafe fn SteamAPI_IsSteamRunning() -> bool{
+
+    let mut proc_key: HKEY = 0;
+    if RegOpenKeyExA(HKCU, "Software\\Valve\\Steam\\ActiveProcess".as_ptr(), 0, 0x20219, &mut proc_key as *mut HKEY) == 0{
+        return false;
+    }
+
+    let mut dwProcessId:u32 = 0;
+    let mut cbdata:u32 = 4;
+    let mut _type:i32 = 0;
+    if RegQueryValueExA(proc_key, "pid".as_ptr(), 0, &mut _type as *mut i32, &mut dwProcessId as *mut u32 as *mut u8, &mut cbdata as *mut u32) == 0 {
+        RegCloseKey(proc_key);
+        return false;
+    }
+    RegCloseKey(proc_key);
+    
+    let hProcess: HANDLE = OpenProcess(0x400, false, dwProcessId);
+    if hProcess == 0{
+        return false;
+    }
+
+    let mut exit_code:i32 = 0;
+    if GetExitCodeProcess(hProcess, &mut exit_code as *mut i32)
+    && (exit_code == STILL_ACTIVE) {
+        CloseHandle(hProcess);
+        return true;
+    }
+
+    CloseHandle(hProcess);
+    return false;
+}
+
+
 unsafe fn init_steam_client(steam: &mut steam_data) -> i32{
-    1
+    if SteamAPI_IsSteamRunning() == false{
+        return 8;
+    }
+
+    let steam_install_path = steam_write_install_path();
+    if steam_install_path == 0 {
+        return 9;
+    }
+    
+    // count chars in string (including the null terminator)
+    //let path_chars = 0;
+    //while (steam_install_path[path_chars++]);
+
+    //let steamclient_path_wstr = vec![0u8; path_chars*2];
+    //if (!MultiByteToWideChar(0xfde9, 0, steam_install_path, -1, steamclient_path_wstr, path_chars)) {
+    //    return 10;
+    //}
+
+    //let steamclient_library: HMODULE = LoadLibraryExW(steamclient_path_wstr, 0, 8);
+
+    //if (steamclient_library == 0) {
+        let steamclient_library = LoadLibraryExA(steam_install_path, 0, 8);
+    //}
+    if steamclient_library == 0{
+        return 11;
+    }
+    
+    let create_interface_func: CreateInterface = *GetProcAddress(steamclient_library, "CreateInterface".as_ptr()).cast::<CreateInterface>();
+    if create_interface_func == std::ptr::null_mut() {
+        FreeLibrary(steamclient_library);
+        return 12;
+    }
+
+    steam.DAT_steam_client_ReleaseThreadLocalMemory = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_ReleaseThreadLocalMemory".as_ptr()).cast::<client_ReleaseThreadLocalMemory>();
+
+    steam.DAT_ISteamClient_ptr = (*create_interface_func)("SteamClient021".as_ptr(), std::ptr::null_mut()).cast::<ISteamClient>();
+    steam.DAT_steamclient_hmodule = steamclient_library; // not sure why this is set without resulting_interface being true
+
+    if steam.DAT_steamclient_hmodule == 0 {
+        FreeLibrary(steamclient_library);
+        return 13;
+    }
+
+    return 0;
 }
 unsafe fn SteamAPI_Shutdown(steam: &mut steam_data){
     if steam.DAT_steam_IPC_pipe != 0 && steam.DAT_steam_user != 0{
