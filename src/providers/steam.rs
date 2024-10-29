@@ -19,11 +19,11 @@ type LSTATUS = i32;
 type HANDLE = u64;
 
 type CreateInterface = extern "stdcall" fn(*const u8, *mut i32) -> UNK_PTR;
-type Steam_IsKnownInterface = extern "C" fn(*const u8) -> bool;
-type client_ReleaseThreadLocalMemory = *const extern "C" fn(bool) -> UNK_PTR;
-type BGetCallback_func = extern "C" fn(HSteamPipe, *mut CallbackMsg_t) -> bool;
-type FreeLastCallback_func = extern "C" fn(HSteamPipe) -> bool;
-type GetAPICallResult_func = extern "C" fn(HSteamPipe, SteamAPICall_t, UNK_PTR, i32, i32, *mut bool) -> bool;
+type Steam_IsKnownInterface = extern "stdcall" fn(*const u8) -> bool;
+type client_ReleaseThreadLocalMemory = extern "stdcall" fn(bool) -> UNK_PTR;
+type BGetCallback_func = extern "stdcall" fn(HSteamPipe, *mut CallbackMsg_t) -> bool;
+type FreeLastCallback_func = extern "stdcall" fn(HSteamPipe) -> bool;
+type GetAPICallResult_func = extern "stdcall" fn(HSteamPipe, SteamAPICall_t, UNK_PTR, i32, i32, *mut bool) -> bool;
     
 #[repr(C)] // TODO: just get rid of this entirely & replace with fillter
 struct SteamIPAddress_t { p1: u64, p2:u64, p3:u32} // should be 20 bytes
@@ -41,39 +41,39 @@ const STILL_ACTIVE:i32 = 0x00000103;
 
 #[repr(C)]
 pub struct ISteamUser__bindgen_vtable{
-    GetHSteamUser:                  *const extern "C" fn(*mut ISteamUser) -> HSteamUser,
-    BLoggedOn:                      *const extern "C" fn(*mut ISteamUser) -> bool,
-    GetSteamID:                     *const extern "C" fn(*mut ISteamUser) -> CSteamID,
-    InitiateGameConnection_DEPRECATED:  *const extern "C" fn(*mut ISteamUser, UNK_PTR, i32, CSteamID, u32, u16, bool) -> i32, // p2: void *pAuthBlob
-    TerminateGameConnection_DEPRECATED: *const extern "C" fn(*mut ISteamUser, u32, u16),
-    TrackAppUsageEvent:             *const extern "C" fn(*mut ISteamUser, CGameID, i32, *const u8), // p4 is optional??
-    GetUserDataFolder:              *const extern "C" fn(*mut ISteamUser,  *mut u8, i32) -> bool,
-    StartVoiceRecording:            *const extern "C" fn(*mut ISteamUser),
-    StopVoiceRecording:             *const extern "C" fn(*mut ISteamUser),
-    GetAvailableVoice:              *const extern "C" fn(*mut ISteamUser, *mut u32, *mut u32, u32) -> EVoiceResult, // default params 3,4
-    GetVoice:                       *const extern "C" fn(*mut ISteamUser, bool, UNK_PTR, u32, u32, bool, UNK_PTR, u32, *mut u32, u32) -> EVoiceResult,
-    DecompressVoice:                *const extern "C" fn(*mut ISteamUser, UNK_PTR, u32, UNK_PTR, u32, *mut u32, u32) -> EVoiceResult,
-    GetVoiceOptimalSampleRate:      *const extern "C" fn(*mut ISteamUser) -> u32,
-    GetAuthSessionTicket:           *const extern "C" fn(*mut ISteamUser, *mut u8, i32, *mut u32, UNK_PTR) -> HAuthTicket, // p5 : SteamNetworkingIdentity
-    GetAuthTicketForWebApi:         *const extern "C" fn(*mut ISteamUser, *mut u8) -> HAuthTicket,
-    BeginAuthSession:               *const extern "C" fn(*mut ISteamUser, *mut u8, i32, CSteamID) -> EBeginAuthSessionResult,
-    EndAuthSession:                 *const extern "C" fn(*mut ISteamUser, CSteamID),
-    CancelAuthTicket:               *const extern "C" fn(*mut ISteamUser, HAuthTicket),
-    UserHasLicenseForApp:           *const extern "C" fn(*mut ISteamUser, CSteamID, AppId_t) -> EUserHasLicenseForAppResult,
-    BIsBehindNAT:                   *const extern "C" fn(*mut ISteamUser) -> bool,
-    AdvertiseGame:                  *const extern "C" fn(*mut ISteamUser, CSteamID, u32, u16),
-    RequestEncryptedAppTicket:      *const extern "C" fn(*mut ISteamUser, *mut u8, i32) -> SteamAPICall_t,
-    GetEncryptedAppTicket:          *const extern "C" fn(*mut ISteamUser, *mut u8, i32, *mut u32) -> bool,
-    GetGameBadgeLevel:              *const extern "C" fn(*mut ISteamUser, i32, bool) -> i32,
-    GetPlayerSteamLevel:            *const extern "C" fn(*mut ISteamUser) -> i32,
-    RequestStoreAuthURL:            *const extern "C" fn(*mut ISteamUser, *mut u8) -> SteamAPICall_t,
-    BIsPhoneVerified:               *const extern "C" fn(*mut ISteamUser) -> bool,
-    BIsTwoFactorEnabled:            *const extern "C" fn(*mut ISteamUser) -> bool,
-    BIsPhoneIdentifying:            *const extern "C" fn(*mut ISteamUser) -> bool,
-    BIsPhoneRequiringVerification:  *const extern "C" fn(*mut ISteamUser) -> bool,
-    GetMarketEligibility:           *const extern "C" fn(*mut ISteamUser) -> SteamAPICall_t,
-    GetDurationControl:             *const extern "C" fn(*mut ISteamUser) -> SteamAPICall_t,
-    BSetDurationControlOnlineState: *const extern "C" fn(*mut ISteamUser, EDurationControlOnlineState) -> bool,
+    GetHSteamUser:                  extern "stdcall" fn(*mut ISteamUser) -> HSteamUser,
+    BLoggedOn:                      extern "stdcall" fn(*mut ISteamUser) -> bool,
+    GetSteamID:                     extern "stdcall" fn(*mut ISteamUser) -> CSteamID,
+    InitiateGameConnection_DEPRECATED:  extern "stdcall" fn(*mut ISteamUser, UNK_PTR, i32, CSteamID, u32, u16, bool) -> i32, // p2: void *pAuthBlob
+    TerminateGameConnection_DEPRECATED: extern "stdcall" fn(*mut ISteamUser, u32, u16),
+    TrackAppUsageEvent:             extern "stdcall" fn(*mut ISteamUser, CGameID, i32, *const u8), // p4 is optional??
+    GetUserDataFolder:              extern "stdcall" fn(*mut ISteamUser,  *mut u8, i32) -> bool,
+    StartVoiceRecording:            extern "stdcall" fn(*mut ISteamUser),
+    StopVoiceRecording:             extern "stdcall" fn(*mut ISteamUser),
+    GetAvailableVoice:              extern "stdcall" fn(*mut ISteamUser, *mut u32, *mut u32, u32) -> EVoiceResult, // default params 3,4
+    GetVoice:                       extern "stdcall" fn(*mut ISteamUser, bool, UNK_PTR, u32, u32, bool, UNK_PTR, u32, *mut u32, u32) -> EVoiceResult,
+    DecompressVoice:                extern "stdcall" fn(*mut ISteamUser, UNK_PTR, u32, UNK_PTR, u32, *mut u32, u32) -> EVoiceResult,
+    GetVoiceOptimalSampleRate:      extern "stdcall" fn(*mut ISteamUser) -> u32,
+    GetAuthSessionTicket:           extern "stdcall" fn(*mut ISteamUser, *mut u8, i32, *mut u32, UNK_PTR) -> HAuthTicket, // p5 : SteamNetworkingIdentity
+    GetAuthTicketForWebApi:         extern "stdcall" fn(*mut ISteamUser, *mut u8) -> HAuthTicket,
+    BeginAuthSession:               extern "stdcall" fn(*mut ISteamUser, *mut u8, i32, CSteamID) -> EBeginAuthSessionResult,
+    EndAuthSession:                 extern "stdcall" fn(*mut ISteamUser, CSteamID),
+    CancelAuthTicket:               extern "stdcall" fn(*mut ISteamUser, HAuthTicket),
+    UserHasLicenseForApp:           extern "stdcall" fn(*mut ISteamUser, CSteamID, AppId_t) -> EUserHasLicenseForAppResult,
+    BIsBehindNAT:                   extern "stdcall" fn(*mut ISteamUser) -> bool,
+    AdvertiseGame:                  extern "stdcall" fn(*mut ISteamUser, CSteamID, u32, u16),
+    RequestEncryptedAppTicket:      extern "stdcall" fn(*mut ISteamUser, *mut u8, i32) -> SteamAPICall_t,
+    GetEncryptedAppTicket:          extern "stdcall" fn(*mut ISteamUser, *mut u8, i32, *mut u32) -> bool,
+    GetGameBadgeLevel:              extern "stdcall" fn(*mut ISteamUser, i32, bool) -> i32,
+    GetPlayerSteamLevel:            extern "stdcall" fn(*mut ISteamUser) -> i32,
+    RequestStoreAuthURL:            extern "stdcall" fn(*mut ISteamUser, *mut u8) -> SteamAPICall_t,
+    BIsPhoneVerified:               extern "stdcall" fn(*mut ISteamUser) -> bool,
+    BIsTwoFactorEnabled:            extern "stdcall" fn(*mut ISteamUser) -> bool,
+    BIsPhoneIdentifying:            extern "stdcall" fn(*mut ISteamUser) -> bool,
+    BIsPhoneRequiringVerification:  extern "stdcall" fn(*mut ISteamUser) -> bool,
+    GetMarketEligibility:           extern "stdcall" fn(*mut ISteamUser) -> SteamAPICall_t,
+    GetDurationControl:             extern "stdcall" fn(*mut ISteamUser) -> SteamAPICall_t,
+    BSetDurationControlOnlineState: extern "stdcall" fn(*mut ISteamUser, EDurationControlOnlineState) -> bool,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -91,54 +91,54 @@ pub struct ISteamUtils {
 
 #[repr(C)]
 pub struct ISteamClient__bindgen_vtable{
-    CreateSteamPipe:                *const extern "C" fn(*mut ISteamClient) -> HSteamPipe,
-    BReleaseSteamPipe:              *const extern "C" fn(*mut ISteamClient, HSteamPipe) -> bool,
-    ConnectToGlobalUser:            *const extern "C" fn(*mut ISteamClient, HSteamPipe) -> HSteamUser,
-    CreateLocalUser:                *const extern "C" fn(*mut ISteamClient, *mut HSteamPipe, EAccountType) -> HSteamUser,
-    ReleaseUser:                    *const extern "C" fn(*mut ISteamClient, HSteamPipe, HSteamUser),
-    GetISteamUser:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> *mut ISteamUser,
-    GetISteamGameServer:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameServer
-    SetLocalIPBinding:              *const extern "C" fn(*mut ISteamClient, &SteamIPAddress_t, u16), // not sure if this one is right????
-    GetISteamFriends:               *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamFriends,
-    GetISteamUtils:                 *const extern "C" fn(*mut ISteamClient, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUtils,
-    GetISteamMatchmaking:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMatchmaking,
-    GetISteamMatchmakingServers:    *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMatchmakingServers,
-    GetISteamGenericInterface:      *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: void,
-    GetISteamUserStats:             *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUserStats,
-    GetISteamGameServerStats:       *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameServerStats,
-    GetISteamApps:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamApps,
-    GetISteamNetworking:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamNetworking,
-    GetISteamRemoteStorage:         *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamRemoteStorage,
-    GetISteamScreenshots:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamScreenshots,
-    GetISteamGameSearch:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameSearch,
-    RunFrame:                       *const extern "C" fn(*mut ISteamClient),
-    GetIPCCallCount:                *const extern "C" fn(*mut ISteamClient) -> u32,
-    SetWarningMessageHook:          *const extern "C" fn(*mut ISteamClient, SteamAPIWarningMessageHook_t),
-    BShutdownIfAllPipesClosed:      *const extern "C" fn(*mut ISteamClient) -> bool,
-    GetISteamHTTP:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamHTTP,
-    GetISteamController:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamController,
-    GetISteamUGC:                   *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUGC,
-    GetISteamMusic:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMusic,
-    GetISteamMusicRemote:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMusicRemote,
-    GetISteamHTMLSurface:           *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamHTMLSurface,
-    DEPRECATED_Set_SteamAPI_CPostAPIResultInProcess:    *const extern "C" fn(*mut ISteamClient, UNK_PTR), // p2: void (*)()
-    DEPRECATED_Remove_SteamAPI_CPostAPIResultInProcess: *const extern "C" fn(*mut ISteamClient, UNK_PTR), // p2: void (*)()
-    Set_SteamAPI_CCheckCallbackRegisteredInProcess:     *const extern "C" fn(*mut ISteamClient, SteamAPI_CheckCallbackRegistered_t),
-    GetISteamInventory:             *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamInventory,
-    GetISteamVideo:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamVideo,
-    GetISteamParentalSettings:      *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamParentalSettings,
-    GetISteamInput:                 *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamInput,
-    ISteamParties:                  *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: GetISteamParties,
-    GetISteamRemotePlay:            *const extern "C" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamRemotePlay,
-    DestroyAllInterfaces:           *const extern "C" fn(*mut ISteamClient),
+    CreateSteamPipe:                extern "stdcall" fn(*mut ISteamClient) -> HSteamPipe,
+    BReleaseSteamPipe:              extern "stdcall" fn(*mut ISteamClient, HSteamPipe) -> bool,
+    ConnectToGlobalUser:            extern "stdcall" fn(*mut ISteamClient, HSteamPipe) -> HSteamUser,
+    CreateLocalUser:                extern "stdcall" fn(*mut ISteamClient, *mut HSteamPipe, EAccountType) -> HSteamUser,
+    ReleaseUser:                    extern "stdcall" fn(*mut ISteamClient, HSteamPipe, HSteamUser),
+    GetISteamUser:                  extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> *mut ISteamUser,
+    GetISteamGameServer:            extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameServer
+    SetLocalIPBinding:              extern "stdcall" fn(*mut ISteamClient, &SteamIPAddress_t, u16), // not sure if this one is right????
+    GetISteamFriends:               extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamFriends,
+    GetISteamUtils:                 extern "stdcall" fn(*mut ISteamClient, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUtils,
+    GetISteamMatchmaking:           extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMatchmaking,
+    GetISteamMatchmakingServers:    extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMatchmakingServers,
+    GetISteamGenericInterface:      extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: void,
+    GetISteamUserStats:             extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUserStats,
+    GetISteamGameServerStats:       extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameServerStats,
+    GetISteamApps:                  extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamApps,
+    GetISteamNetworking:            extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamNetworking,
+    GetISteamRemoteStorage:         extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamRemoteStorage,
+    GetISteamScreenshots:           extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamScreenshots,
+    GetISteamGameSearch:            extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamGameSearch,
+    RunFrame:                       extern "stdcall" fn(*mut ISteamClient),
+    GetIPCCallCount:                extern "stdcall" fn(*mut ISteamClient) -> u32,
+    SetWarningMessageHook:          extern "stdcall" fn(*mut ISteamClient, SteamAPIWarningMessageHook_t),
+    BShutdownIfAllPipesClosed:      extern "stdcall" fn(*mut ISteamClient) -> bool,
+    GetISteamHTTP:                  extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamHTTP,
+    GetISteamController:            extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamController,
+    GetISteamUGC:                   extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamUGC,
+    GetISteamMusic:                 extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMusic,
+    GetISteamMusicRemote:           extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamMusicRemote,
+    GetISteamHTMLSurface:           extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamHTMLSurface,
+    DEPRECATED_Set_SteamAPI_CPostAPIResultInProcess:    extern "stdcall" fn(*mut ISteamClient, UNK_PTR), // p2: void (*)()
+    DEPRECATED_Remove_SteamAPI_CPostAPIResultInProcess: extern "stdcall" fn(*mut ISteamClient, UNK_PTR), // p2: void (*)()
+    Set_SteamAPI_CCheckCallbackRegisteredInProcess:     extern "stdcall" fn(*mut ISteamClient, SteamAPI_CheckCallbackRegistered_t),
+    GetISteamInventory:             extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamInventory,
+    GetISteamVideo:                 extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamVideo,
+    GetISteamParentalSettings:      extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamParentalSettings,
+    GetISteamInput:                 extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamInput,
+    ISteamParties:                  extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: GetISteamParties,
+    GetISteamRemotePlay:            extern "stdcall" fn(*mut ISteamClient, HSteamUser, HSteamPipe, *const u8) -> UNK_PTR, // out: ISteamRemotePlay,
+    DestroyAllInterfaces:           extern "stdcall" fn(*mut ISteamClient),
 }
-pub unsafe fn ISteamClient_CreateSteamPipe(_self: *mut ISteamClient) -> HSteamPipe{ return (*(*(*_self).vtable_).CreateSteamPipe)(_self); }
-pub unsafe fn ISteamClient_ConnectToGlobalUser(_self: *mut ISteamClient, pipe: HSteamPipe) -> HSteamUser{ return (*(*(*_self).vtable_).ConnectToGlobalUser)(_self, pipe); }
-pub unsafe fn ISteamClient_GetISteamGenericInterface(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *const u8) -> UNK_PTR{ return (*(*(*_self).vtable_).GetISteamGenericInterface)(_self, user, pipe, interface); }
-pub unsafe fn ISteamClient_GetISteamUser(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *const u8) -> *mut ISteamUser{ return (*(*(*_self).vtable_).GetISteamUser)(_self, user, pipe, interface); }
-pub unsafe fn ISteamClient_ReleaseUser(_self: *mut ISteamClient, pipe: HSteamPipe, user: HSteamUser) { (*(*(*_self).vtable_).ReleaseUser)(_self, pipe, user); }
-pub unsafe fn ISteamClient_BReleaseSteamPipe(_self: *mut ISteamClient, pipe: HSteamPipe) -> bool{ return (*(*(*_self).vtable_).BReleaseSteamPipe)(_self, pipe); }
-pub unsafe fn ISteamClient_BShutdownIfAllPipesClosed(_self: *mut ISteamClient) -> bool{ return (*(*(*_self).vtable_).BShutdownIfAllPipesClosed)(_self); }
+pub unsafe fn ISteamClient_CreateSteamPipe(_self: *mut ISteamClient) -> HSteamPipe{ return ((*(*_self).vtable_).CreateSteamPipe)(_self); }
+pub unsafe fn ISteamClient_ConnectToGlobalUser(_self: *mut ISteamClient, pipe: HSteamPipe) -> HSteamUser{ return ((*(*_self).vtable_).ConnectToGlobalUser)(_self, pipe); }
+pub unsafe fn ISteamClient_GetISteamGenericInterface(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *const u8) -> UNK_PTR{ return ((*(*_self).vtable_).GetISteamGenericInterface)(_self, user, pipe, interface); }
+pub unsafe fn ISteamClient_GetISteamUser(_self: *mut ISteamClient, user: HSteamUser, pipe: HSteamPipe, interface: *const u8) -> *mut ISteamUser{ return ((*(*_self).vtable_).GetISteamUser)(_self, user, pipe, interface); }
+pub unsafe fn ISteamClient_ReleaseUser(_self: *mut ISteamClient, pipe: HSteamPipe, user: HSteamUser) { ((*(*_self).vtable_).ReleaseUser)(_self, pipe, user); }
+pub unsafe fn ISteamClient_BReleaseSteamPipe(_self: *mut ISteamClient, pipe: HSteamPipe) -> bool{ return ((*(*_self).vtable_).BReleaseSteamPipe)(_self, pipe); }
+pub unsafe fn ISteamClient_BShutdownIfAllPipesClosed(_self: *mut ISteamClient) -> bool{ return ((*(*_self).vtable_).BShutdownIfAllPipesClosed)(_self); }
 
 
 
@@ -172,10 +172,10 @@ pub struct steam_data{
     DAT_steam_alt_IPC_pipe: HSteamPipe,
     DAT_steam_user: HSteamUser,
 
-    DAT_steam_client_ReleaseThreadLocalMemory: *const client_ReleaseThreadLocalMemory,
-    DAT_steam_BGetCallback_func: *const BGetCallback_func,
-    DAT_steam_FreeLastCallback_func: *const FreeLastCallback_func,
-    DAT_steam_GetAPICallResult_func: *const GetAPICallResult_func,
+    DAT_steam_client_ReleaseThreadLocalMemory: client_ReleaseThreadLocalMemory,
+    DAT_steam_BGetCallback_func: BGetCallback_func,
+    DAT_steam_FreeLastCallback_func: FreeLastCallback_func,
+    DAT_steam_GetAPICallResult_func: GetAPICallResult_func,
 }
 
 // FINISHED
@@ -251,45 +251,27 @@ unsafe fn init_steam_client(steam: &mut steam_data) -> i32{
     }
 
     let s = String::from_utf8(steam_install_path.clone()).expect("Found invalid UTF-8");
-    print!("\nBOLD: path: {}!!!\n\n", s);
+    print!("\nBOLD: path: {} \n\n", s); // NOTE: for some reason this prints the WHOLE *non-delimited* string, however its perfectly fine when cast to just a ptr
     
     let steamclient_library = LoadLibraryExA(steam_install_path.as_ptr(), 0, 8);
     if steamclient_library == 0{
         return 11;
     }
 
-    
-    let create_interface_func = GetProcAddress(steamclient_library, "CreateInterface\0".as_ptr()).cast::<CreateInterface>();
-    if create_interface_func == std::ptr::null_mut() {
+    let create_interface_func: CreateInterface = std::mem::transmute(GetProcAddress(steamclient_library, "CreateInterface\0".as_ptr()));
+    if create_interface_func as *const () == std::ptr::null_mut() {
         FreeLibrary(steamclient_library);
         return 12;
     }
 
-    print!("\nBOLD: 3!!!\n\n");
-    steam.DAT_steam_client_ReleaseThreadLocalMemory = GetProcAddress(steamclient_library, "Steam_ReleaseThreadLocalMemory\0".as_ptr()).cast::<client_ReleaseThreadLocalMemory>();
+    steam.DAT_steam_client_ReleaseThreadLocalMemory = std::mem::transmute(GetProcAddress(steamclient_library, "Steam_ReleaseThreadLocalMemory\0".as_ptr()));
 
-    print!("\nBOLD: 4 {:p} {:p}!!!\n\n", create_interface_func, &create_interface_func as *const *const CreateInterface);
-
-    let tester: *mut i32 = std::ptr::null_mut();
-
-    print!("\nBOLD: 4.1 {:p}!!!\n\n", tester);
-
-    use std::{thread, time};
-    thread::sleep(time::Duration::from_millis(60000));
-
-    let test = (*create_interface_func)("SteamClient021\0".as_ptr(), tester);
-    steam.DAT_ISteamClient_ptr = test.cast::<ISteamClient>();
+    steam.DAT_ISteamClient_ptr = (create_interface_func)("SteamClient021\0".as_ptr(), std::ptr::null_mut()).cast::<ISteamClient>();
     steam.DAT_steamclient_hmodule = steamclient_library; // not sure why this is set without resulting_interface being true
-
-    print!("\nBOLD: 5!!!\n\n");
     if steam.DAT_steamclient_hmodule == 0 {
-        
-        print!("\nBOLD: 6!!!\n\n");
         FreeLibrary(steamclient_library);
         return 13;
     }
-
-    print!("\nBOLD: 7!!!\n\n");
     return 0;
 }
 unsafe fn SteamAPI_Shutdown(steam: &mut steam_data){
@@ -304,7 +286,7 @@ unsafe fn SteamAPI_Shutdown(steam: &mut steam_data){
     if steam.DAT_steam_alt_IPC_pipe != 0 {
         ISteamClient_BReleaseSteamPipe(steam.DAT_ISteamClient_ptr, steam.DAT_steam_alt_IPC_pipe);
         steam.DAT_steam_alt_IPC_pipe = 0;}
-    steam.DAT_steam_client_ReleaseThreadLocalMemory = std::ptr::null_mut();
+    steam.DAT_steam_client_ReleaseThreadLocalMemory = std::mem::transmute(0u64);
 
     if steam.DAT_ISteamClient_ptr != std::ptr::null_mut(){
         ISteamClient_BShutdownIfAllPipesClosed(steam.DAT_ISteamClient_ptr);
@@ -322,10 +304,10 @@ unsafe fn init_steam() -> i32{
         DAT_steamclient_hmodule: 0,
         DAT_steam_alt_IPC_pipe: 0,
         DAT_steam_user: 0,
-        DAT_steam_client_ReleaseThreadLocalMemory: std::ptr::null_mut(),
-        DAT_steam_BGetCallback_func: std::ptr::null_mut(),
-        DAT_steam_FreeLastCallback_func: std::ptr::null_mut(),
-        DAT_steam_GetAPICallResult_func: std::ptr::null_mut(),
+        DAT_steam_client_ReleaseThreadLocalMemory: std::mem::transmute(0u64),
+        DAT_steam_BGetCallback_func: std::mem::transmute(0u64),
+        DAT_steam_FreeLastCallback_func: std::mem::transmute(0u64),
+        DAT_steam_GetAPICallResult_func: std::mem::transmute(0u64),
     };
 
     if steam.DAT_ISteamClient_ptr != std::ptr::null_mut() {
@@ -361,7 +343,7 @@ unsafe fn init_steam() -> i32{
     //     }
     // }
 
-    if steam.DAT_steam_client_ReleaseThreadLocalMemory == std::ptr::null_mut(){
+    if steam.DAT_steam_client_ReleaseThreadLocalMemory as *const () == std::ptr::null_mut(){
         steam.DAT_steam_alt_IPC_pipe = ISteamClient_CreateSteamPipe(steam.DAT_ISteamClient_ptr);
     }
     
@@ -377,12 +359,7 @@ unsafe fn init_steam() -> i32{
         return 6;
     }
 
-    // app_id:u32 = steam_utils->GetAppID();
-    // if (!app_id) {
-    //     SteamAPI_Shutdown();
-    //     return 7;}
     const app_id:u32 = 0x00085E4E;
-
     if std::env::var("SteamAppId").is_err() {
         std::env::set_var("SteamAppId", app_id.to_string());}
     if std::env::var("SteamGameId").is_err() {
@@ -390,9 +367,9 @@ unsafe fn init_steam() -> i32{
         std::env::set_var("SteamOverlayGameId", app_id.to_string());}
     if std::env::var("SteamOverlayGameId").is_err() {
         std::env::set_var("SteamOverlayGameId", app_id.to_string());}
-    steam.DAT_steam_BGetCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_BGetCallback\0".as_ptr()).cast::<BGetCallback_func>();
-    steam.DAT_steam_FreeLastCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_FreeLastCallback\0".as_ptr()).cast::<FreeLastCallback_func>();
-    steam.DAT_steam_GetAPICallResult_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_GetAPICallResult\0".as_ptr()).cast::<GetAPICallResult_func>();
+    steam.DAT_steam_BGetCallback_func = std::mem::transmute(GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_BGetCallback\0".as_ptr()));
+    steam.DAT_steam_FreeLastCallback_func = std::mem::transmute(GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_FreeLastCallback\0".as_ptr()));
+    steam.DAT_steam_GetAPICallResult_func = std::mem::transmute(GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_GetAPICallResult\0".as_ptr()));
     return 0;
 }
 
