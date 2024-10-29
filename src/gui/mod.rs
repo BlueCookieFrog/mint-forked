@@ -1954,7 +1954,7 @@ impl eframe::App for App {
                         let modio = Modio::new(Credentials::new("b4aab104219c1f6d752beb37e483b17b"), client)?; // retrieved from DRG exe?? not sure if putting this in plain text is a bad thing
 
                         use modio::auth::SteamOptions;
-                        let opts = SteamOptions::new("CAIQsfufjAEYQSCPASrAARn2+nEi6G1doURK2vZSUhkSKsFlEyTuFyQfFIHl9c5jF6e3Z/czxBR5RaqrgfasBIGNpZ+SEPkwl7Jkg+TK6imj21J2frRWvnbLpBfEVKkoThD3HNIL2tpHY0U9KUWs5GlVmfqfy2+i9OwH1CdsAycSo3/Sar2zSvoNJXu7Wx1V8KtdEAri8sBIHDUEA+DvnZAdONKQFhm/spkLQ+p7+hHcf248oBMIiQsg8l4fO1yfrwhc+TaMtv8+f4rgVUUwfQ==");
+                        let opts = SteamOptions::new("");
                         let token = modio.auth().external(opts).await?;
 
                         let _modio = modio.with_credentials(token);

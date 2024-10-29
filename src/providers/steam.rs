@@ -18,12 +18,12 @@ type HKEY = u64;
 type LSTATUS = i32;
 type HANDLE = u64;
 
-type CreateInterface = *const extern "C" fn(*const u8, *mut i32) -> UNK_PTR;
-type Steam_IsKnownInterface = *const extern "C" fn(*const u8) -> bool;
+type CreateInterface = extern "stdcall" fn(*const u8, *mut i32) -> UNK_PTR;
+type Steam_IsKnownInterface = extern "C" fn(*const u8) -> bool;
 type client_ReleaseThreadLocalMemory = *const extern "C" fn(bool) -> UNK_PTR;
-type BGetCallback_func = *const extern "C" fn(HSteamPipe, *mut CallbackMsg_t) -> bool;
-type FreeLastCallback_func = *const extern "C" fn(HSteamPipe) -> bool;
-type GetAPICallResult_func = *const extern "C" fn(HSteamPipe, SteamAPICall_t, UNK_PTR, i32, i32, *mut bool) -> bool;
+type BGetCallback_func = extern "C" fn(HSteamPipe, *mut CallbackMsg_t) -> bool;
+type FreeLastCallback_func = extern "C" fn(HSteamPipe) -> bool;
+type GetAPICallResult_func = extern "C" fn(HSteamPipe, SteamAPICall_t, UNK_PTR, i32, i32, *mut bool) -> bool;
     
 #[repr(C)] // TODO: just get rid of this entirely & replace with fillter
 struct SteamIPAddress_t { p1: u64, p2:u64, p3:u32} // should be 20 bytes
@@ -31,7 +31,7 @@ struct SteamIPAddress_t { p1: u64, p2:u64, p3:u32} // should be 20 bytes
 #[repr(C)]
 struct CallbackMsg_t{ m_hSteamUser: HSteamUser, m_iCallback: i32, m_pubParam: *mut u8, m_cubParam: i32 }
 
-type UNK_PTR = *mut u8;
+type UNK_PTR = *mut ();
 const PSZ_INTERNAL_CHECK_INTERFACE_VERSIONS: &str = "SteamUtils010\0SteamController008\0SteamInput006\0SteamUser023\0\0";
 const HKCR:HKEY = 0xffffffff80000000; // HKEY_CLASSES_ROOT
 const HKCU:HKEY = 0xffffffff80000001; // HKEY_CURRENT_USER
@@ -153,7 +153,7 @@ pub struct ISteamClient {
 extern "stdcall" {
     pub fn LoadLibraryA(lpFileName: *const u8) -> HMODULE;
     pub fn LoadLibraryExA( lpLibFileName: *const u8, hFile:u64, dwFlags: u32) -> HMODULE;
-    pub fn GetProcAddress(hModule: HMODULE, lpProcName: *const u8) -> UNK_PTR;
+    pub fn GetProcAddress(hModule: HMODULE, lpProcName: *const u8) -> *const ();
     pub fn FreeLibrary(hModule: HMODULE) -> bool;
     pub fn RegOpenKeyExA(hKey: HKEY, lpSubKey: *const u8, ulOptions:u32, samDesired:i32, phkResult:*mut HKEY) -> LSTATUS;
     pub fn RegQueryValueExA(hKey: HKEY, lpValueName: *const u8, lpReserved:u64, lpType: *mut i32, lpData: *mut u8, lpcbData:*mut u32) -> LSTATUS;
@@ -172,17 +172,16 @@ pub struct steam_data{
     DAT_steam_alt_IPC_pipe: HSteamPipe,
     DAT_steam_user: HSteamUser,
 
-    DAT_steam_client_ReleaseThreadLocalMemory: client_ReleaseThreadLocalMemory,
-    DAT_steam_BGetCallback_func: BGetCallback_func,
-    DAT_steam_FreeLastCallback_func: FreeLastCallback_func,
-    DAT_steam_GetAPICallResult_func: GetAPICallResult_func,
+    DAT_steam_client_ReleaseThreadLocalMemory: *const client_ReleaseThreadLocalMemory,
+    DAT_steam_BGetCallback_func: *const BGetCallback_func,
+    DAT_steam_FreeLastCallback_func: *const FreeLastCallback_func,
+    DAT_steam_GetAPICallResult_func: *const GetAPICallResult_func,
 }
 
 // FINISHED
 unsafe fn SteamAPI_IsSteamRunning() -> bool{
     let mut proc_key: HKEY = 0;
     if RegOpenKeyExA(HKCU, "Software\\Valve\\Steam\\ActiveProcess\0".as_ptr(), 0, 0x20219, &mut proc_key as *mut HKEY) != 0{
-        print!("\nBOLD: 1st!!!\n\n");
         return false;
     }
 
@@ -191,14 +190,12 @@ unsafe fn SteamAPI_IsSteamRunning() -> bool{
     let mut _type:i32 = 0;
     if RegQueryValueExA(proc_key, "pid\0".as_ptr(), 0, &mut _type as *mut i32, &mut dwProcessId as *mut u32 as *mut u8, &mut cbdata as *mut u32) != 0 {
         RegCloseKey(proc_key);
-        print!("\nBOLD: 2nd!!!\n\n");
         return false;
     }
     RegCloseKey(proc_key);
     
     let hProcess: HANDLE = OpenProcess(0x400, false, dwProcessId);
     if hProcess == 0{
-        print!("\nBOLD: 3rd!!! {}, {}\n\n", dwProcessId, proc_key);
         return false;
     }
 
@@ -210,14 +207,12 @@ unsafe fn SteamAPI_IsSteamRunning() -> bool{
     }
 
     CloseHandle(hProcess);
-    print!("\nBOLD: 5th!!!\n\n");
     return false;
 }
 
 unsafe fn steam_write_install_path() -> Vec<u8>{
     let mut proc_key: HKEY = 0;
     if RegOpenKeyExA(HKCU, "Software\\Valve\\Steam\\ActiveProcess\0".as_ptr(), 0, 0x20219, &mut proc_key as *mut HKEY) != 0{
-        print!("\nBOLD: 6!!!\n\n");
         return vec![0u8; 0];
     }
     let mut out_proc_path = [0u8; 0x410];
@@ -225,7 +220,6 @@ unsafe fn steam_write_install_path() -> Vec<u8>{
     let mut _type:i32 = 0;
     if RegQueryValueExA(proc_key, "SteamClientDll64\0".as_ptr(), 0, &mut _type as *mut i32, out_proc_path.as_mut_ptr(), &mut cbdata as *mut u32) != 0 {
         RegCloseKey(proc_key);
-        print!("\nBOLD: 7!!!\n\n");
         return vec![0u8; 0];
     }
     RegCloseKey(proc_key);
@@ -259,40 +253,43 @@ unsafe fn init_steam_client(steam: &mut steam_data) -> i32{
     let s = String::from_utf8(steam_install_path.clone()).expect("Found invalid UTF-8");
     print!("\nBOLD: path: {}!!!\n\n", s);
     
-    // count chars in string (including the null terminator)
-    //let path_chars = 0;
-    //while (steam_install_path[path_chars++]);
-
-    //let steamclient_path_wstr = vec![0u8; path_chars*2];
-    //if (!MultiByteToWideChar(0xfde9, 0, steam_install_path, -1, steamclient_path_wstr, path_chars)) {
-    //    return 10;
-    //}
-
-    //let steamclient_library: HMODULE = LoadLibraryExW(steamclient_path_wstr, 0, 8);
-
-    //if (steamclient_library == 0) {
-        let steamclient_library = LoadLibraryExA(steam_install_path.as_ptr(), 0, 8);
-    //}
+    let steamclient_library = LoadLibraryExA(steam_install_path.as_ptr(), 0, 8);
     if steamclient_library == 0{
         return 11;
     }
+
     
-    let create_interface_func: CreateInterface = *GetProcAddress(steamclient_library, "CreateInterface\0".as_ptr()).cast::<CreateInterface>();
+    let create_interface_func = GetProcAddress(steamclient_library, "CreateInterface\0".as_ptr()).cast::<CreateInterface>();
     if create_interface_func == std::ptr::null_mut() {
         FreeLibrary(steamclient_library);
         return 12;
     }
 
-    steam.DAT_steam_client_ReleaseThreadLocalMemory = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_ReleaseThreadLocalMemory\0".as_ptr()).cast::<client_ReleaseThreadLocalMemory>();
+    print!("\nBOLD: 3!!!\n\n");
+    steam.DAT_steam_client_ReleaseThreadLocalMemory = GetProcAddress(steamclient_library, "Steam_ReleaseThreadLocalMemory\0".as_ptr()).cast::<client_ReleaseThreadLocalMemory>();
 
-    steam.DAT_ISteamClient_ptr = (*create_interface_func)("SteamClient021\0".as_ptr(), std::ptr::null_mut()).cast::<ISteamClient>();
+    print!("\nBOLD: 4 {:p} {:p}!!!\n\n", create_interface_func, &create_interface_func as *const *const CreateInterface);
+
+    let tester: *mut i32 = std::ptr::null_mut();
+
+    print!("\nBOLD: 4.1 {:p}!!!\n\n", tester);
+
+    use std::{thread, time};
+    thread::sleep(time::Duration::from_millis(60000));
+
+    let test = (*create_interface_func)("SteamClient021\0".as_ptr(), tester);
+    steam.DAT_ISteamClient_ptr = test.cast::<ISteamClient>();
     steam.DAT_steamclient_hmodule = steamclient_library; // not sure why this is set without resulting_interface being true
 
+    print!("\nBOLD: 5!!!\n\n");
     if steam.DAT_steamclient_hmodule == 0 {
+        
+        print!("\nBOLD: 6!!!\n\n");
         FreeLibrary(steamclient_library);
         return 13;
     }
 
+    print!("\nBOLD: 7!!!\n\n");
     return 0;
 }
 unsafe fn SteamAPI_Shutdown(steam: &mut steam_data){
@@ -393,9 +390,9 @@ unsafe fn init_steam() -> i32{
         std::env::set_var("SteamOverlayGameId", app_id.to_string());}
     if std::env::var("SteamOverlayGameId").is_err() {
         std::env::set_var("SteamOverlayGameId", app_id.to_string());}
-    steam.DAT_steam_BGetCallback_func = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_BGetCallback\0".as_ptr()).cast::<BGetCallback_func>();
-    steam.DAT_steam_FreeLastCallback_func = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_FreeLastCallback\0".as_ptr()).cast::<FreeLastCallback_func>();
-    steam.DAT_steam_GetAPICallResult_func = *GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_GetAPICallResult\0".as_ptr()).cast::<GetAPICallResult_func>();
+    steam.DAT_steam_BGetCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_BGetCallback\0".as_ptr()).cast::<BGetCallback_func>();
+    steam.DAT_steam_FreeLastCallback_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_FreeLastCallback\0".as_ptr()).cast::<FreeLastCallback_func>();
+    steam.DAT_steam_GetAPICallResult_func = GetProcAddress(steam.DAT_steamclient_hmodule, "Steam_GetAPICallResult\0".as_ptr()).cast::<GetAPICallResult_func>();
     return 0;
 }
 
