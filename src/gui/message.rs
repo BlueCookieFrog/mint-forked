@@ -18,6 +18,7 @@ use super::{
 use crate::gui::LastAction;
 use crate::integrate::*;
 use crate::mod_lints::{LintId, LintReport};
+use crate::providers::steam;
 use crate::state::{ModData_v0_1_0 as ModData, ModOrGroup};
 use crate::*;
 use crate::{
@@ -46,6 +47,7 @@ pub enum Message {
     SelfUpdate(SelfUpdate),
     FetchSelfUpdateProgress(FetchSelfUpdateProgress),
     FetchSubscriptions(FetchSubscriptions),
+    FetchOauth(FetchOauth),
 }
 
 impl Message {
@@ -60,6 +62,7 @@ impl Message {
             Self::SelfUpdate(msg) => msg.receive(app),
             Self::FetchSelfUpdateProgress(msg) => msg.receive(app),
             Self::FetchSubscriptions(msg) => msg.receive(app),
+            Self::FetchOauth(msg) => msg.receive(app),
         }
     }
 }
@@ -836,4 +839,155 @@ async fn fetch_modio_subscriptions(oauth_token: String) -> Result<Vec<String>, m
     }
 
     Ok(result)
+}
+
+
+#[derive(Debug)]
+pub struct FetchOauth {
+    rid: RequestID,
+    result: Result<String, &'static str>,
+    ctx: egui::Context
+}
+
+impl FetchOauth {
+    pub fn send(
+        app: &mut App,
+        ctx: &egui::Context,
+    ) {
+
+        let rid = app.request_counter.next();
+        let ctx = ctx.clone();
+        let tx = app.tx.clone();
+        let handle: JoinHandle<()> = tokio::spawn(async move {
+            let result = fetch_steam_oauth_token().await;
+            
+            tx.send(Message::FetchOauth(Self {
+                rid,
+                result,
+                ctx: ctx.clone(),
+            }))
+            .await
+            .unwrap();
+            ctx.request_repaint();
+        });
+        app.last_action = None;
+        app.fetch_oauth_rid = Some(MessageHandle {
+            rid,
+            handle,
+            state: (),
+        });
+    }
+
+    fn receive(self, app: &mut App) {
+        if Some(self.rid) == app.fetch_oauth_rid.as_ref().map(|r| r.rid) {
+            match self.result {
+                Ok(modio_oauth_token) => {
+                    info!("fetch oauth successful");
+
+                    for provider_factory in ModStore::get_provider_factories() {
+                        info!("id: {}", provider_factory.id);
+                        if provider_factory.id == "modio"{
+                            app.window_provider_parameters = Some(
+                                WindowProviderParameters::new(provider_factory, &app.state),
+                            );
+                        }
+                    }
+                    
+                    let Some(window) = &mut app.window_provider_parameters else {
+                        info!("failed doody");
+                        return;
+                    };
+                    let mut check = false;
+                    info!("progressed");
+
+                    let mut var: Option<&mut String> = None;
+                    for p in window.factory.parameters {
+                        if p.id == "oauth" {
+                            //info!("name: {}, desc: {}, id: {}", p.name, p.description, p.id);
+                            //ui.hyperlink_to(p.name, link).on_hover_text(p.description);
+                            //ui.label(p.name).on_hover_text(p.description);
+                            var = Some(window.parameters.entry(p.id.to_string()).or_default());
+                        }
+                    }
+                    if var.is_some(){
+                        *(var.unwrap()) = modio_oauth_token;
+                        check = true;
+
+                        window.check_error = None;
+                        let tx = window.tx.clone();
+                        let ctx = self.ctx.clone();
+                        let rid = app.request_counter.next();
+                        let store = app.state.store.clone();
+                        let params = window.parameters.clone();
+                        let factory = window.factory;
+                        let handle = tokio::task::spawn(async move {
+                            let res = store.add_provider_checked(factory, &params).await;
+                            tx.send((rid, res)).await.unwrap();
+                            ctx.request_repaint();
+                        });
+                        window.check_rid = Some((rid, handle));
+                    }
+
+
+
+
+                    app.last_action = Some(LastAction::success("oauth fetching complete".to_string()));
+                }
+                Err(e) => {
+                    error!("fetch oauth failed");
+                    error!("{:#?}", e);
+                    app.last_action = Some(LastAction::failure(e.to_string()));
+                }
+            }
+            app.fetch_oauth_rid = None;
+        }
+    }
+}
+
+
+
+async fn fetch_steam_oauth_token() -> Result<String, &'static str> {
+    let result: Result<String, &str>; // = Err("none"); // we have to declare it to access outside of unsafe block
+    unsafe { 
+        result = steam::steam_main();
+    }
+
+
+
+    // 
+        use crate::providers::modio::LoggingMiddleware; 
+        use modio::{Credentials, Modio, Result};
+
+        let client = reqwest_middleware::ClientBuilder::new(reqwest::Client::new())
+            .with::<LoggingMiddleware>(Default::default())
+            .build();
+    // 
+    let api_result = Modio::new(Credentials::new("b4aab104219c1f6d752beb37e483b17b"), client); // retrieved from DRG exe?? not sure if putting this in plain text is a bad thing
+    if api_result.is_err(){ return Err("Failed to instantiate Modio API account"); }
+    let api = api_result.unwrap();
+
+    use modio::auth::SteamOptions;
+    let opts = SteamOptions::new(result.unwrap());
+    let token_result = api.auth().external(opts).await;
+    if token_result.is_err(){ return Err("Failed to auth with steam's encrypted packet"); }
+    let token = token_result.unwrap();
+
+    // debug to make sure it worked
+        // let _modio_result = api.with_credentials(token);
+        // let doody = _modio_result.user();
+        // let super_doody = doody.current().await;
+        // if super_doody.is_err(){ return Err("Failed to auth wiht oauth"); }
+        // let doody = super_doody.unwrap();
+        // if doody.is_none(){ return Err("Failed to get account"); }
+        // let doody2 = doody.unwrap();
+        // print!("found user: {}", doody2.username);
+        // print!("found user: {}", doody2.profile_url);
+    // 
+
+    if token.token.is_none(){
+        return Err("successfully authenticated but without an oauth token???")
+    }
+    let val = token.token.unwrap(); // NOTE: for some reason the generated oauth tokens last for a whole year??? you'd think it would force refresh the tokens like once every 24 hours??
+    return Ok(val.value);
+    //return Ok("ok epic".to_owned());
 }

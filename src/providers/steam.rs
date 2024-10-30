@@ -304,7 +304,7 @@ unsafe fn init_steam_client(steam: &mut steam_data) -> i32{
     }
 
     let s = String::from_utf8(steam_install_path.clone()).expect("Found invalid UTF-8");
-    print!("\nBOLD: path: {} \n\n", s); // NOTE: for some reason this prints the WHOLE *non-delimited* string, however its perfectly fine when cast to just a ptr
+    //print!("\nBOLD: path: {} \n\n", s); // NOTE: for some reason this prints the WHOLE *non-delimited* string, however its perfectly fine when cast to just a ptr
     
     let steamclient_library = LoadLibraryExA(steam_install_path.as_ptr(), 0, 8);
     if steamclient_library == 0{
@@ -495,7 +495,7 @@ unsafe fn process_callbacks(steam: &steam_data) -> Option<i32> {
     let mut cb_output = CallbackMsg_t { m_hSteamUser: 0, m_iCallback: 0, m_pubParam: std::ptr::null_mut(), m_cubParam: 0};
     while (steam.DAT_steam_BGetCallback_func)(steam.DAT_steam_IPC_pipe, &mut cb_output as *mut CallbackMsg_t){
 
-        print!("\nCallback recieved: {}\n\n", cb_output.m_iCallback);
+        //print!("\nCallback recieved: {}\n\n", cb_output.m_iCallback);
 
         // if the callback type is 'SteamAPICallCompleted_t' then we have to manually await the thing
         if cb_output.m_iCallback == 703 {
@@ -592,13 +592,13 @@ pub unsafe fn steam_main() -> Result<String, &'static str>{
             iter_count += 1;
             if iter_count > 300{ SteamAPI_Shutdown(&mut init); return Err("Failed to recieve encrypted app ticket callback."); }
             use std::{thread, time::Duration};
-            thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_millis(100)); // i think theres another way that we should be calling the sleep thing
             var = SteamAPI_RunCallbacks(&init);
         }
 
         // evaluate outcome
         let mut error_log = "Unspecifed RequestEncryptedAppTicket error.";
-        print!("\nBOLD: status {}!!!\n\n", var.unwrap());
+        //print!("\nBOLD: status {}!!!\n\n", var.unwrap());
         match var.unwrap(){
         1 => {
             let mut data_buffer = vec![0u8; 1024];
