@@ -1924,6 +1924,7 @@ impl eframe::App for App {
                             print!("\nBOLD: {}\n\n", init_result.unwrap_err());
                         } else  {
                             print!("\nBOLD: test succcess!!!\n\n");
+                            print!("\nBOLD: {}!!!\n\n", init_result.unwrap());
                         }
                     }
                     
