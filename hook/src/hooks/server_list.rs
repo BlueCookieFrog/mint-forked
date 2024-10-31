@@ -45,8 +45,21 @@ fn detour_get_server_name(a: *const c_void, b: *const c_void) -> *const ue::FStr
     unsafe {
         let name = GetServerName.call(a, b).cast_mut().as_mut().unwrap();
 
+        // iterate modlist to find any non-verified mods
+        let var = &globals().meta.mods;
+        let mut has_non_verified = false;
+        for i in 0..var.len(){
+            let var2 = &var[i];
+            if var2.approval != mint_lib::mod_info::ApprovalStatus::Verified{
+                has_non_verified = true;
+            }
+        }
+
+
         let mut new_name = widestring::U16String::new();
-        new_name.push_slice([0x5b, 0x4d, 0x4f, 0x44, 0x44, 0x45, 0x44, 0x5d, 0x20]);
+        if has_non_verified == true{ // if non-verified mod detected, then adjust lobby name accordingly
+            new_name.push_slice([0x5b, 0x4d, 0x4f, 0x44, 0x44, 0x45, 0x44, 0x5d, 0x20]);
+        }
         new_name.push_slice(name.as_slice());
 
         name.clear();
