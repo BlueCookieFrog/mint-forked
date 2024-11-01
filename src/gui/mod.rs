@@ -4,10 +4,9 @@ mod named_combobox;
 mod request_counter;
 mod toggle_switch;
 
-//#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
 use std::ops::{Deref, RangeInclusive};
 use std::time::{Duration, Instant, SystemTime};
 use std::{
@@ -19,11 +18,10 @@ use std::{
 use eframe::egui::{Button, CollapsingHeader, RichText, Visuals};
 use eframe::epaint::{Pos2, Vec2};
 use eframe::{
-    egui::{FontSelection, Layout, TextFormat, Ui, Id},
+    egui::{FontSelection, Layout, TextFormat, Ui, Id, UiBuilder},
     emath::{Align, Align2},
     epaint::{text::LayoutJob, Color32, Stroke},
 };
-use egui::UiBuilder;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use itertools::Itertools as _;
 use mint_lib::error::ResultExt as _;
@@ -157,6 +155,7 @@ pub struct App {
     show_version_combo:  bool,
     show_copy_url:  bool,
     show_mod_type_tags: bool,
+    show_log_window: bool,
 }
 
 #[derive(Default)]
@@ -257,6 +256,7 @@ impl App {
             show_version_combo: true,
             show_copy_url: true,
             show_mod_type_tags: true,
+            show_log_window: false,
         })
     }
 
@@ -383,26 +383,17 @@ impl App {
                         }
                     }
 
-                    match required_status {
-                        RequiredStatus::RequiredByAll => {
+                    if *required_status == RequiredStatus::RequiredByAll {
                             mk_searchable_modio_tag(
-                                "RequiredByAll",
+                                "ReqByAll",
                                 ui,
                                 Some(egui::Color32::LIGHT_RED),
                                 Some(
-                                    "All lobby members must use this mod for it to work correctly!",
+                                    "Required By All - All lobby members must use this mod for it to work correctly!",
                                 ),
                             );
                         }
-                        RequiredStatus::Optional => {
-                            mk_searchable_modio_tag(
-                                "Optional",
-                                ui,
-                                None,
-                                Some("Clients are not required to install this mod to function"),
-                            );
-                        }
-                    }
+
 
                     if *qol && self.show_mod_type_tags{
                         mk_searchable_modio_tag("QoL", ui, None, None);
@@ -1756,8 +1747,10 @@ impl eframe::App for App {
         self.show_lints_toggle(ctx);
         self.show_lint_report(ctx);
 
-        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-            ui.with_layout(egui::Layout::right_to_left(Align::TOP), |ui| {
+        egui::TopBottomPanel::bottom("bottom_panel")
+        .exact_height(27.0)
+        .show(ctx, |ui| {
+            ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
                 ui.add_enabled_ui(
                     self.integrate_rid.is_none()
                         && self.update_rid.is_none()
@@ -1784,6 +1777,7 @@ impl eframe::App for App {
                                         .unwrap();
                                 });
                             }
+                            ui.add(egui::Separator::default().vertical().shrink(4.0));
                         }
 
                         ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
@@ -1927,7 +1921,55 @@ impl eframe::App for App {
                         });
                     }
                 }
-                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                ui.with_layout(egui::Layout::left_to_right(Align::Center), |ui| {
+                    if ui
+                        .button("Logs")
+                        .on_hover_text("Open logs")
+                        .clicked()
+                        {
+                            self.show_log_window = true;
+                        }
+
+                    if self.show_log_window {
+                        ctx.show_viewport_immediate(
+                            egui::ViewportId::from_hash_of("logs"),
+                            egui::ViewportBuilder::default()
+                                .with_title("Logs")
+                                .with_inner_size([600.0, 400.0]),
+                            |ctx, _class| {
+                                let log_path = self.state.dirs.data_dir.join("mint.log").clone();
+                                let contents = fs::read_to_string(log_path)
+                                            .expect("Didn't find log file");
+
+                                egui::CentralPanel::default().show(ctx, |ui| {
+                                    let scroll_height =
+                                    (ui.available_height() - 30.0).clamp(0.0, f32::INFINITY);
+                                    // FIXME Scroll bar doesn't stick to the right side of the window
+                                    // but it appears and the end of the longest line
+                                    egui::ScrollArea::vertical()
+                                        .max_height(scroll_height)
+                                        .show(ui, |ui|{
+                                            ui.add(egui::Label::new(contents));
+                                        });
+                                });
+
+                                egui::TopBottomPanel::bottom("log_panel")
+                                .exact_height(27.0)
+                                .show(ctx, |ui| {
+                                    ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                                        if ui.button("Open logs file").clicked() {
+                                            let _ = opener::open(self.state.dirs.data_dir.join("mint.log"));
+                                        };
+                                    });
+                                });
+
+                                if ctx.input(|i| i.viewport().close_requested()) {
+                                    // Tell parent viewport that we should not show next frame:
+                                    self.show_log_window = false;
+                                }
+                            });
+                    }
+
                     if let Some(last_action) = &self.last_action {
                         let msg = match &last_action.status {
                             LastActionStatus::Success(msg) => {
@@ -1948,7 +1990,9 @@ impl eframe::App for App {
                             }
                         };
                         ui.ctx().request_repaint(); // for continuously updating time
-                        ui.label(format!("({}): {}", last_action.timeago(), msg));
+                        ui.add(egui::Label::new(format!("({}): {}", last_action.timeago(), msg))
+                                .truncate()
+                        );
                     }
                 });
             });
@@ -2038,7 +2082,7 @@ impl eframe::App for App {
                         });
 
                         let profile = self.state.mod_data.active_profile.clone();
-
+                        ui.add_space(2.0);
                         ui.horizontal(|ui| {
                             ui.label("Sort by: ");
 
@@ -2047,25 +2091,60 @@ impl eframe::App for App {
                                 .map(|c| (Some(c.sort_category), c.is_ascending))
                                 .unwrap_or_default();
 
-                            let mut clicked = ui.radio_value(&mut sort_category, None, "Manual").clicked();
-                            for category in SortBy::iter() {
-                                let mut radio_label = category.as_str().to_owned();
-                                if sort_category == Some(category) {
-                                    radio_label.push_str(if is_ascending { " ⏶" } else { " ⏷" });
+                            egui::ComboBox::from_id_salt("sort_cat")
+                            .selected_text(format!("{}",{
+                                match sort_category {
+                                    None => "Manual",
+                                    Some(category) => category.as_str(),
                                 }
-                                let resp = ui.radio_value(&mut sort_category, Some(category), radio_label);
-                                if resp.clicked() {
-                                    clicked = true;
-                                    if resp.changed() {
-                                        is_ascending = true;
-                                    } else {
-                                        is_ascending = !is_ascending;
+                            }))
+                            .show_ui(ui, |ui|{
+                                    if ui.selectable_value(&mut sort_category, None, "Manual")
+                                    .clicked()
+                                    {
+                                        self.update_sorting_config(sort_category, is_ascending);
+                                    };
+                                    for category in SortBy::iter() {
+                                        let combo_label = category.as_str().to_owned();
+                                        if ui.selectable_value(&mut sort_category, Some(category), combo_label)
+                                        .clicked()
+                                        {
+                                            self.update_sorting_config(sort_category, is_ascending);
+                                        };
                                     }
-                                };
-                            }
-                            if clicked {
-                                self.update_sorting_config(sort_category, is_ascending);
-                            }
+                            });
+
+                            ui.label("Order: ");
+
+                            ui.add_enabled_ui(sort_category.is_some(), |ui|{
+                                egui::ComboBox::from_id_salt("order")
+                                .selected_text(
+                                    match is_ascending{
+                                        true => "Ascending",
+                                        false => "Descending",
+                                    }
+                                )
+                                .show_ui(ui, |ui|{
+                                    if ui.selectable_value(&mut is_ascending, true, "Ascending")
+                                    .clicked(){
+                                        self.update_sorting_config(sort_category, is_ascending);
+                                    }
+                                    if ui.selectable_value(&mut is_ascending, false, "Descending")
+                                    .clicked(){
+                                        self.update_sorting_config(sort_category, is_ascending);
+                                    }
+                                });
+                            });
+
+                            ui.add(egui::Separator::default().vertical());
+                            // ui.label("Display: ");
+                            egui::ComboBox::from_id_salt("display")
+                            .selected_text("Display filters")
+                            .show_ui(ui, |ui|{
+                                ui.checkbox(&mut self.show_version_combo, "Version select");
+                                ui.checkbox(&mut self.show_copy_url, "Copy URL");
+                                ui.checkbox(&mut self.show_mod_type_tags, "Mod tags");
+                            });
 
                             ui.add_space(16.);
                             // TODO: actually implement mod groups.
@@ -2109,12 +2188,7 @@ impl eframe::App for App {
                             }
                         });
 
-                        ui.horizontal(|ui| {
-                            ui.label("Display: ");
-                            ui.checkbox(&mut self.show_version_combo, "Version select");
-                            ui.checkbox(&mut self.show_copy_url, "Copy URL");
-                            ui.checkbox(&mut self.show_mod_type_tags, "Mod tags");
-                        });
+                        ui.separator();
 
                         self.ui_profile(ui, &profile);
 

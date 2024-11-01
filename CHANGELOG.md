@@ -6,18 +6,27 @@
 
 ### User Interface
 
-- Make update message scrollable, so it doesn't go outside visible area making it impossible to close
-- Fix in-app update download
+- Make the update message scrollable, so it doesn't go outside visible area making it impossible to close
 - Update button names to better reflect what they do
 - Swap postion of "Update mods" and "Uninstall mods"
 - Update mod address entry to be scrollable
 - Fix changing load priority value, while using priority sort option, resulting in weird behaviour
+- Removed "Optional" tag and shortened "RequiredByAll" to "ReqByAll"
+- Moved sorting options to combobox
+- Added an option to disable some of the items on mod list
+- Changed the issue with changing load priority option when using priority sorting option
+- Added logs window that displays info previously displayed in the terminal
 
 ### Core Functionality
 
 - Removed redundant patch to fix gas clouds not exploding
+- Disabled Windows terminal opening by default
 
-## [0.2.11] - 2024-09-22
+### Internal Changes
+
+- Updated egui to version 0.29.1
+
+## [Unreleased master branch] - 2024-06
 
 ### General
 
@@ -81,7 +90,8 @@
 - Fix including same asset paths with different casings causing Unreal Engine to load neither ([#29](https://github.com/trumank/mint/issues/29))
 
 <!-- next-url -->
-[Unreleased]: https://github.com/trumank/mint/compare/v0.2.10...HEAD
+[Unreleased]: https://github.com/trumank/mint/compare/master...BlueCookieFrog:mint:master
+[Unreleased master branch]: https://github.com/trumank/mint/compare/v0.2.10...HEAD
 [0.2.10]: https://github.com/trumank/mint/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/trumank/mint/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/trumank/mint/compare/v0.2.7...v0.2.8
