@@ -3,6 +3,7 @@ mod ue;
 
 use std::{io::BufReader, path::Path};
 
+use std::sync::{LazyLock, Mutex};
 use anyhow::{Context, Result};
 use fs_err as fs;
 use hooks::{FnLoadGameFromMemory, FnSaveGameToMemory};
@@ -53,7 +54,7 @@ unsafe extern "system" fn init(_: usize) {
 }
 
 static mut GLOBALS: Option<Globals> = None;
-static mut LOG_GUARD: Option<tracing_appender::non_blocking::WorkerGuard> = None;
+static LOG_GUARD: LazyLock<Mutex<Option<tracing_appender::non_blocking::WorkerGuard>>> = LazyLock::new(|| Mutex::new(None));
 
 pub struct Globals {
     resolution: hook_resolvers::HookResolution,
@@ -156,7 +157,7 @@ unsafe fn patch() -> Result<()> {
     info!("PS scan: {:#x?}", resolution);
 
     GLOBALS = Some(Globals { resolution, meta });
-    LOG_GUARD = guard;
+    LOG_GUARD.lock().unwrap().replace(guard.unwrap());
 
     hooks::initialize()?;
 

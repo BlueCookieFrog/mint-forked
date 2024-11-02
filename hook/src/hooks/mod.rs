@@ -8,6 +8,7 @@ use std::{
     ptr::NonNull,
 };
 
+use std::sync::{LazyLock, Mutex};
 use anyhow::{Context, Result};
 use fs_err as fs;
 use mint_lib::DRGInstallationType;
@@ -98,16 +99,16 @@ pub unsafe fn initialize() -> Result<()> {
             }
         }
         DRGInstallationType::Xbox => {
-            SAVES_DIR = Some(
-                std::env::current_exe()
-                    .ok()
-                    .as_deref()
-                    .and_then(Path::parent)
-                    .and_then(Path::parent)
-                    .and_then(Path::parent)
-                    .context("could not determine save location")?
-                    .join("Saved")
-                    .join("SaveGames"),
+            SAVES_DIR.lock().unwrap().replace(
+                        std::env::current_exe()
+                            .ok()
+                            .as_deref()
+                            .and_then(Path::parent)
+                            .and_then(Path::parent)
+                            .and_then(Path::parent)
+                            .context("could not determine save location")?
+                            .join("Saved")
+                            .join("SaveGames"),
             );
 
             if let Ok(save_game) = &globals().resolution.save_game {
@@ -160,14 +161,14 @@ unsafe fn patch_mem(address: *mut u8, patch: impl AsRef<[u8]>) -> Result<()> {
     Ok(())
 }
 
-static mut SAVES_DIR: Option<PathBuf> = None;
+static SAVES_DIR: LazyLock<Mutex<Option<PathBuf>>> = LazyLock::new(|| Mutex::new(None));
 
 fn get_path_for_slot(slot_name: &ue::FString) -> Option<PathBuf> {
     let mut str_path = slot_name.to_string();
     str_path.push_str(".sav");
 
     let path = std::path::Path::new(&str_path);
-    let mut normalized_path = unsafe { SAVES_DIR.as_ref() }?.clone();
+    let mut normalized_path = SAVES_DIR.lock().unwrap().as_ref()?.clone();
 
     for component in path.components() {
         if let std::path::Component::Normal(c) = component {
@@ -253,7 +254,7 @@ fn detour_main(
     };
 
     // about to exit, drop log guard
-    drop(unsafe { LOG_GUARD.take() });
+    drop(LOG_GUARD.lock().unwrap().take());
 
     ret
 }
