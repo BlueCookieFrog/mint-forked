@@ -15,7 +15,7 @@ pub use string::*;
 
 use std::ffi::c_void;
 
-use crate::globals;
+use crate::GLOBALS;
 
 pub type FnFFrameStep =
     unsafe extern "system" fn(stack: &mut kismet::FFrame, *mut UObject, result: *mut c_void);

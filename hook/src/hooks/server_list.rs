@@ -3,7 +3,7 @@ use std::ffi::c_void;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::globals;
+use crate::GLOBALS;
 use crate::hooks::ExecFn;
 use crate::ue::{self, FName, FString, TArray, TMap};
 
@@ -20,7 +20,7 @@ pub fn kismet_hooks() -> &'static [(&'static str, ExecFn)] {
 }
 
 pub unsafe fn init_hooks() -> Result<()> {
-    if let Ok(server_name) = &globals().resolution.server_name {
+    if let Ok(server_name) = &GLOBALS.lock().unwrap().as_ref().unwrap().resolution.server_name {
         GetServerName
             .initialize(
                 std::mem::transmute(server_name.get_server_name.0),
@@ -29,7 +29,7 @@ pub unsafe fn init_hooks() -> Result<()> {
             .enable()?;
     }
 
-    if let Ok(server_mods) = &globals().resolution.server_mods {
+    if let Ok(server_mods) = &GLOBALS.lock().unwrap().as_ref().unwrap().resolution.server_mods {
         USessionHandlingFSDFillSessionSetting
             .initialize(
                 std::mem::transmute(server_mods.fill_session_setting.0),
@@ -73,7 +73,7 @@ fn detour_fill_session_setting(
             unknown2,
         );
 
-        let name = globals().meta.to_server_list_string();
+        let name = GLOBALS.lock().unwrap().as_ref().unwrap().meta.to_server_list_string();
 
         let s: FString = serde_json::to_string(&vec![JsonMod {
             name,
@@ -87,7 +87,11 @@ fn detour_fill_session_setting(
         type Fn = unsafe extern "system" fn(*const c_void, ue::FName, *const ue::FString, u32);
 
         let f: Fn = std::mem::transmute(
-            globals()
+            GLOBALS
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap()
                 .resolution
                 .server_mods
                 .as_ref()

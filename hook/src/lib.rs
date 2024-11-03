@@ -53,7 +53,7 @@ unsafe extern "system" fn init(_: usize) {
     patch().ok();
 }
 
-static mut GLOBALS: Option<Globals> = None;
+static GLOBALS: Mutex<Option<Globals>> = Mutex::new(None);
 static LOG_GUARD: Mutex<Option<tracing_appender::non_blocking::WorkerGuard>> = Mutex::new(None);
 
 pub struct Globals {
@@ -126,9 +126,9 @@ impl Globals {
     }
 }
 
-pub fn globals() -> &'static Globals {
-    unsafe { GLOBALS.as_ref().unwrap() }
-}
+// pub fn globals() -> &'static Globals {
+//     unsafe { GLOBALS.as_ref().unwrap() }
+// }
 
 unsafe fn patch() -> Result<()> {
     let exe_path = std::env::current_exe().ok();
@@ -156,7 +156,7 @@ unsafe fn patch() -> Result<()> {
     let resolution = image.resolve(hook_resolvers::HookResolution::resolver())?;
     info!("PS scan: {:#x?}", resolution);
 
-    GLOBALS = Some(Globals { resolution, meta });
+    GLOBALS.lock().unwrap().replace(Globals { resolution, meta });
     LOG_GUARD.lock().unwrap().replace(guard.unwrap());
 
     hooks::initialize()?;

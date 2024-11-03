@@ -1,4 +1,4 @@
-use crate::{globals, ue::FString};
+use crate::{GLOBALS, ue::FString};
 
 use super::UEHash;
 
@@ -19,12 +19,12 @@ pub struct FName {
 impl FName {
     pub fn new(string: &FString) -> FName {
         let mut ret = FName::default();
-        unsafe { globals().fname_ctor_wchar()(&mut ret, string.as_ptr(), EFindName::Add) };
+        unsafe { GLOBALS.lock().unwrap().as_ref().unwrap().fname_ctor_wchar()(&mut ret, string.as_ptr(), EFindName::Add) };
         ret
     }
     pub fn find(string: &FString) -> FName {
         let mut ret = FName::default();
-        unsafe { globals().fname_ctor_wchar()(&mut ret, string.as_ptr(), EFindName::Find) };
+        unsafe { GLOBALS.lock().unwrap().as_ref().unwrap().fname_ctor_wchar()(&mut ret, string.as_ptr(), EFindName::Find) };
         ret
     }
 }
@@ -44,7 +44,7 @@ impl std::fmt::Display for FName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut string = FString::new();
         unsafe {
-            (globals().fname_to_string())(self, &mut string);
+            (GLOBALS.lock().unwrap().as_ref().unwrap().fname_to_string())(self, &mut string);
         };
         write!(f, "{string}")
     }
