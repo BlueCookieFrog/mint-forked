@@ -32,7 +32,13 @@ impl<T> Drop for TArray<T> {
                 self.num as usize,
             ))
         }
-        GLOBALS.lock().unwrap().as_ref().unwrap().gmalloc().free(self.data.cast());
+        GLOBALS
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .gmalloc()
+            .free(self.data.cast());
     }
 }
 impl<T> Default for TArray<T> {

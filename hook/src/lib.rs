@@ -3,11 +3,11 @@ mod ue;
 
 use std::{io::BufReader, path::Path};
 
-use std::sync::Mutex;
 use anyhow::{Context, Result};
 use fs_err as fs;
 use hooks::{FnLoadGameFromMemory, FnSaveGameToMemory};
 use mint_lib::mod_info::Meta;
+use std::sync::Mutex;
 use tracing::{info, warn};
 use windows::Win32::{
     Foundation::HMODULE,
@@ -156,7 +156,10 @@ unsafe fn patch() -> Result<()> {
     let resolution = image.resolve(hook_resolvers::HookResolution::resolver())?;
     info!("PS scan: {:#x?}", resolution);
 
-    GLOBALS.lock().unwrap().replace(Globals { resolution, meta });
+    GLOBALS
+        .lock()
+        .unwrap()
+        .replace(Globals { resolution, meta });
     LOG_GUARD.lock().unwrap().replace(guard.unwrap());
 
     hooks::initialize()?;

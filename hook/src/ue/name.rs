@@ -1,4 +1,4 @@
-use crate::{GLOBALS, ue::FString};
+use crate::{ue::FString, GLOBALS};
 
 use super::UEHash;
 
@@ -19,12 +19,24 @@ pub struct FName {
 impl FName {
     pub fn new(string: &FString) -> FName {
         let mut ret = FName::default();
-        unsafe { GLOBALS.lock().unwrap().as_ref().unwrap().fname_ctor_wchar()(&mut ret, string.as_ptr(), EFindName::Add) };
+        unsafe {
+            GLOBALS.lock().unwrap().as_ref().unwrap().fname_ctor_wchar()(
+                &mut ret,
+                string.as_ptr(),
+                EFindName::Add,
+            )
+        };
         ret
     }
     pub fn find(string: &FString) -> FName {
         let mut ret = FName::default();
-        unsafe { GLOBALS.lock().unwrap().as_ref().unwrap().fname_ctor_wchar()(&mut ret, string.as_ptr(), EFindName::Find) };
+        unsafe {
+            GLOBALS.lock().unwrap().as_ref().unwrap().fname_ctor_wchar()(
+                &mut ret,
+                string.as_ptr(),
+                EFindName::Find,
+            )
+        };
         ret
     }
 }

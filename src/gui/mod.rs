@@ -4,9 +4,9 @@ mod named_combobox;
 mod request_counter;
 mod toggle_switch;
 
+use fs_err as fs;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
-use fs_err as fs;
 use std::ops::{Deref, RangeInclusive};
 use std::time::{Duration, Instant, SystemTime};
 use std::{
@@ -18,7 +18,7 @@ use std::{
 use eframe::egui::{Button, CollapsingHeader, RichText, Visuals};
 use eframe::epaint::{Pos2, Vec2};
 use eframe::{
-    egui::{FontSelection, Layout, TextFormat, Ui, Id, UiBuilder},
+    egui::{FontSelection, Id, Layout, TextFormat, Ui, UiBuilder},
     emath::{Align, Align2},
     epaint::{text::LayoutJob, Color32, Stroke},
 };
@@ -152,8 +152,8 @@ pub struct App {
     self_update_rid: Option<MessageHandle<SelfUpdateProgress>>,
     original_exe_path: Option<PathBuf>,
     problematic_mod_id: Option<u32>,
-    show_version_combo:  bool,
-    show_copy_url:  bool,
+    show_version_combo: bool,
+    show_copy_url: bool,
     show_mod_type_tags: bool,
     show_log_window: bool,
 }
@@ -217,11 +217,7 @@ impl App {
         let state = State::init(dirs)?;
 
         Ok(Self {
-            default_visuals: cc
-                .egui_ctx
-                .style()
-                .visuals
-                .clone(),
+            default_visuals: cc.egui_ctx.style().visuals.clone(),
             args,
             tx,
             rx,
@@ -361,7 +357,7 @@ impl App {
                             }
                         };
 
-                        match approval_status {
+                    match approval_status {
                         ApprovalStatus::Verified => {
                             mk_searchable_modio_tag(
                                 "Verified",
@@ -384,7 +380,7 @@ impl App {
                     }
 
                     if *required_status == RequiredStatus::RequiredByAll {
-                            mk_searchable_modio_tag(
+                        mk_searchable_modio_tag(
                                 "ReqByAll",
                                 ui,
                                 Some(egui::Color32::LIGHT_RED),
@@ -392,22 +388,21 @@ impl App {
                                     "Required By All - All lobby members must use this mod for it to work correctly!",
                                 ),
                             );
-                        }
+                    }
 
-
-                    if *qol && self.show_mod_type_tags{
+                    if *qol && self.show_mod_type_tags {
                         mk_searchable_modio_tag("QoL", ui, None, None);
                     }
-                    if *gameplay && self.show_mod_type_tags{
+                    if *gameplay && self.show_mod_type_tags {
                         mk_searchable_modio_tag("Gameplay", ui, None, None);
                     }
-                    if *audio && self.show_mod_type_tags{
+                    if *audio && self.show_mod_type_tags {
                         mk_searchable_modio_tag("Audio", ui, None, None);
                     }
-                    if *visual && self.show_mod_type_tags{
+                    if *visual && self.show_mod_type_tags {
                         mk_searchable_modio_tag("Visual", ui, None, None);
                     }
-                    if *framework && self.show_mod_type_tags{
+                    if *framework && self.show_mod_type_tags {
                         mk_searchable_modio_tag("Framework", ui, None, None);
                     }
                 }
@@ -473,36 +468,35 @@ impl App {
                 }
 
                 if let Some(info) = &info {
-                    let combo = egui::ComboBox::from_id_salt(row_index)
-                        .selected_text(
-                            self.state
-                                .store
-                                .get_version_name(&mc.spec)
-                                .unwrap_or_default(),
-                        );
+                    let combo = egui::ComboBox::from_id_salt(row_index).selected_text(
+                        self.state
+                            .store
+                            .get_version_name(&mc.spec)
+                            .unwrap_or_default(),
+                    );
 
-                        if self.show_version_combo{
-                            combo.show_ui(ui, |ui| {
+                    if self.show_version_combo {
+                        combo.show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                &mut mc.spec.url,
+                                info.spec.url.to_string(),
+                                self.state
+                                    .store
+                                    .get_version_name(&info.spec)
+                                    .unwrap_or_default(),
+                            );
+                            for version in info.versions.iter().rev() {
                                 ui.selectable_value(
                                     &mut mc.spec.url,
-                                    info.spec.url.to_string(),
+                                    version.url.to_string(),
                                     self.state
                                         .store
-                                        .get_version_name(&info.spec)
+                                        .get_version_name(version)
                                         .unwrap_or_default(),
                                 );
-                                for version in info.versions.iter().rev() {
-                                    ui.selectable_value(
-                                        &mut mc.spec.url,
-                                        version.url.to_string(),
-                                        self.state
-                                            .store
-                                            .get_version_name(version)
-                                            .unwrap_or_default(),
-                                    );
-                                }
-                            });
-                        };
+                            }
+                        });
+                    };
 
                     ui.scope(|ui| {
                         ui.style_mut().spacing.interact_size.x = 30.;
@@ -549,12 +543,13 @@ impl App {
                         );
                     });
 
-                    if self.show_copy_url &&
-                        ui
-                        .button("📋")
-                        .on_hover_text_at_pointer("copy URL")
-                        .clicked(){
-                            ui.output_mut(|o| o.copied_text = mc.spec.url.to_string());
+                    if self.show_copy_url
+                        && ui
+                            .button("📋")
+                            .on_hover_text_at_pointer("copy URL")
+                            .clicked()
+                    {
+                        ui.output_mut(|o| o.copied_text = mc.spec.url.to_string());
                     }
 
                     if mc.enabled {
@@ -825,19 +820,22 @@ impl App {
             let now = SystemTime::now();
             let wait_time = Duration::from_secs(10);
             egui::Area::new(Id::new("available-update-overlay"))
-            .movable(false)
-            .fixed_pos(Pos2::ZERO)
-            .order(egui::Order::Background)
-            .show(ctx, |ui| {
-                egui::Frame::none()
-                .fill(Color32::from_rgba_unmultiplied(0, 0, 0, 127))
-                .show(ui, |ui| {
+                .movable(false)
+                .fixed_pos(Pos2::ZERO)
+                .order(egui::Order::Background)
+                .show(ctx, |ui| {
+                    egui::Frame::none()
+                        .fill(Color32::from_rgba_unmultiplied(0, 0, 0, 127))
+                        .show(ui, |ui| {
                             // ui.available_size doesn't work for some reason after updating from egui 0.25.0 to 0.29.1
                             // HACK ugly hack to grab the size from window vertices, not sure if I'm cooking or I'm cooked
-                            ui.allocate_space(Vec2{x: ctx.screen_rect().max.x, y: ctx.screen_rect().max.y});
+                            ui.allocate_space(Vec2 {
+                                x: ctx.screen_rect().max.x,
+                                y: ctx.screen_rect().max.y,
+                            });
                             // ui.allocate_space(ui.available_size());
                         })
-                    });
+                });
             if let Some(MessageHandle { state, .. }) = &self.self_update_rid {
                 egui::Window::new("Update progress")
                     .collapsible(false)
@@ -876,9 +874,11 @@ impl App {
                     .resizable([false, true])
                     .vscroll(true)
                     .show(ctx, |ui| {
-                        CommonMarkViewer::new()
-                            .max_image_width(Some(512))
-                            .show(ui, &mut self.cache, &update.body);
+                        CommonMarkViewer::new().max_image_width(Some(512)).show(
+                            ui,
+                            &mut self.cache,
+                            &update.body,
+                        );
                         ui.with_layout(egui::Layout::right_to_left(Align::TOP), |ui| {
                             if ui
                                 .add(egui::Button::new("Install update"))
@@ -1747,325 +1747,341 @@ impl eframe::App for App {
         self.show_lint_report(ctx);
 
         egui::TopBottomPanel::bottom("bottom_panel")
-        .exact_height(27.0)
-        .show(ctx, |ui| {
-            ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                ui.add_enabled_ui(
-                    self.integrate_rid.is_none()
-                        && self.update_rid.is_none()
-                        && self.lint_rid.is_none()
-                        && self.self_update_rid.is_none()
-                        && self.state.config.drg_pak_path.is_some(),
-                    |ui| {
-                        if let Some(args) = &self.args {
-                            if ui
-                                .button("Launch game")
-                                .on_hover_ui(|ui| {
-                                    for arg in args {
-                                        ui.label(arg);
-                                    }
-                                })
-                                .clicked()
-                            {
-                                let args = args.clone();
-                                tokio::task::spawn_blocking(move || {
-                                    let mut iter = args.iter();
-                                    let _ = std::process::Command::new(iter.next().unwrap())
-                                        .args(iter)
-                                        .spawn()
-                                        .unwrap()
-                                        .wait();
-                                });
-                            }
-                            ui.add(egui::Separator::default().vertical().shrink(4.0));
-                        }
-
-                        ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
-                            let mut button = ui.button("Apply changes").on_hover_text(
-                                "Install the hook dll to game folder and regenerate mod bundle",
-                            );
-                            if self.state.config.drg_pak_path.is_none() {
-                                button = button.on_disabled_hover_text(
-                                    "DRG install not found. Configure it in the settings menu.",
-                                );
-                            }
-
-                            if button.clicked() {
-                                let mut mod_configs = Vec::new();
-                                let mut mods = Vec::new();
-                                let active_profile = self.state.mod_data.active_profile.clone();
-                                self.state
-                                    .mod_data
-                                    .for_each_enabled_mod(&active_profile, |mc| {
-                                        mod_configs.push(mc.clone());
+            .exact_height(27.0)
+            .show(ctx, |ui| {
+                ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                    ui.add_enabled_ui(
+                        self.integrate_rid.is_none()
+                            && self.update_rid.is_none()
+                            && self.lint_rid.is_none()
+                            && self.self_update_rid.is_none()
+                            && self.state.config.drg_pak_path.is_some(),
+                        |ui| {
+                            if let Some(args) = &self.args {
+                                if ui
+                                    .button("Launch game")
+                                    .on_hover_ui(|ui| {
+                                        for arg in args {
+                                            ui.label(arg);
+                                        }
+                                    })
+                                    .clicked()
+                                {
+                                    let args = args.clone();
+                                    tokio::task::spawn_blocking(move || {
+                                        let mut iter = args.iter();
+                                        let _ = std::process::Command::new(iter.next().unwrap())
+                                            .args(iter)
+                                            .spawn()
+                                            .unwrap()
+                                            .wait();
                                     });
-
-                                mod_configs.sort_by_key(|k| -k.priority);
-
-                                for config in mod_configs {
-                                    mods.push(config.spec.clone());
                                 }
-
-                                self.last_action = None;
-                                self.integrate_rid = Some(message::Integrate::send(
-                                    &mut self.request_counter,
-                                    self.state.store.clone(),
-                                    mods,
-                                    self.state.config.drg_pak_path.as_ref().unwrap().clone(),
-                                    self.state.config.deref().into(),
-                                    self.tx.clone(),
-                                    ctx.clone(),
-                                ));
-                                self.problematic_mod_id = None;
+                                ui.add(egui::Separator::default().vertical().shrink(4.0));
                             }
-                        });
 
-                        if ui
-                            .button("Check for updates")
-                            .on_hover_text(
-                                "Checks for updates for all mods and updates local cache",
-                            )
-                            .clicked()
-                        {
-                            message::UpdateCache::send(self);
-                            self.problematic_mod_id = None;
-                        }
-
-                        ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
-                           // UGH, Rust is confusing
-                            let button = ui
-                            .scope( |ui| {
-                                ui.visuals_mut().widgets.hovered.weak_bg_fill = colors::DARK_RED;
-                                ui.visuals_mut().widgets.active.weak_bg_fill = colors::DARKER_RED;
-                                if self.state.config.drg_pak_path.is_some(){
-                                    ui.button("Uninstall mods").on_hover_text(
-                                        "Remove the hook dll and mod bundle from game folder",
-                                    )}
-                                else {
-                                    ui.button("Uninstall mods").on_disabled_hover_text(
+                            ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
+                                let mut button = ui.button("Apply changes").on_hover_text(
+                                    "Install the hook dll to game folder and regenerate mod bundle",
+                                );
+                                if self.state.config.drg_pak_path.is_none() {
+                                    button = button.on_disabled_hover_text(
                                         "DRG install not found. Configure it in the settings menu.",
-                                    )
+                                    );
                                 }
-                            })
-                            .inner;
 
-                            if button.clicked() {
-                                self.last_action = None;
-                                if let Some(pak_path) = &self.state.config.drg_pak_path {
-                                    let mut mods = HashSet::default();
+                                if button.clicked() {
+                                    let mut mod_configs = Vec::new();
+                                    let mut mods = Vec::new();
                                     let active_profile = self.state.mod_data.active_profile.clone();
                                     self.state.mod_data.for_each_enabled_mod(
                                         &active_profile,
                                         |mc| {
-                                            if let Some(modio_id) = self
-                                                .state
-                                                .store
-                                                .get_mod_info(&mc.spec)
-                                                .and_then(|i| i.modio_id)
-                                            {
-                                                mods.insert(modio_id);
-                                            }
+                                            mod_configs.push(mc.clone());
                                         },
                                     );
 
-                                    debug!("uninstalling mods: pak_path = {}", pak_path.display());
-                                    self.last_action = Some(match uninstall(pak_path, mods) {
-                                        Ok(()) => LastAction::success(
-                                            "Successfully uninstalled mods".to_string(),
-                                        ),
-                                        Err(e) => LastAction::failure(format!(
-                                            "Failed to uninstall mods: {e}"
-                                        )),
-                                    })
+                                    mod_configs.sort_by_key(|k| -k.priority);
+
+                                    for config in mod_configs {
+                                        mods.push(config.spec.clone());
+                                    }
+
+                                    self.last_action = None;
+                                    self.integrate_rid = Some(message::Integrate::send(
+                                        &mut self.request_counter,
+                                        self.state.store.clone(),
+                                        mods,
+                                        self.state.config.drg_pak_path.as_ref().unwrap().clone(),
+                                        self.state.config.deref().into(),
+                                        self.tx.clone(),
+                                        ctx.clone(),
+                                    ));
+                                    self.problematic_mod_id = None;
                                 }
+                            });
+
+                            if ui
+                                .button("Check for updates")
+                                .on_hover_text(
+                                    "Checks for updates for all mods and updates local cache",
+                                )
+                                .clicked()
+                            {
+                                message::UpdateCache::send(self);
+                                self.problematic_mod_id = None;
                             }
-                        });
-                    },
-                );
-                if self.integrate_rid.is_some() {
-                    if ui.button("Cancel").clicked() {
-                        self.integrate_rid.take().unwrap().handle.abort();
+
+                            ui.add_enabled_ui(self.state.config.drg_pak_path.is_some(), |ui| {
+                                // UGH, Rust is confusing
+                                let button = ui
+                                    .scope(|ui| {
+                                        ui.visuals_mut().widgets.hovered.weak_bg_fill =
+                                            colors::DARK_RED;
+                                        ui.visuals_mut().widgets.active.weak_bg_fill =
+                                            colors::DARKER_RED;
+                                        if self.state.config.drg_pak_path.is_some() {
+                                            ui.button("Uninstall mods").on_hover_text(
+                                        "Remove the hook dll and mod bundle from game folder",
+                                    )
+                                        } else {
+                                            ui.button("Uninstall mods").on_disabled_hover_text(
+                                        "DRG install not found. Configure it in the settings menu.",
+                                    )
+                                        }
+                                    })
+                                    .inner;
+
+                                if button.clicked() {
+                                    self.last_action = None;
+                                    if let Some(pak_path) = &self.state.config.drg_pak_path {
+                                        let mut mods = HashSet::default();
+                                        let active_profile =
+                                            self.state.mod_data.active_profile.clone();
+                                        self.state.mod_data.for_each_enabled_mod(
+                                            &active_profile,
+                                            |mc| {
+                                                if let Some(modio_id) = self
+                                                    .state
+                                                    .store
+                                                    .get_mod_info(&mc.spec)
+                                                    .and_then(|i| i.modio_id)
+                                                {
+                                                    mods.insert(modio_id);
+                                                }
+                                            },
+                                        );
+
+                                        debug!(
+                                            "uninstalling mods: pak_path = {}",
+                                            pak_path.display()
+                                        );
+                                        self.last_action = Some(match uninstall(pak_path, mods) {
+                                            Ok(()) => LastAction::success(
+                                                "Successfully uninstalled mods".to_string(),
+                                            ),
+                                            Err(e) => LastAction::failure(format!(
+                                                "Failed to uninstall mods: {e}"
+                                            )),
+                                        })
+                                    }
+                                }
+                            });
+                        },
+                    );
+                    if self.integrate_rid.is_some() {
+                        if ui.button("Cancel").clicked() {
+                            self.integrate_rid.take().unwrap().handle.abort();
+                        }
+                        ui.spinner();
                     }
-                    ui.spinner();
-                }
-                if self.update_rid.is_some() {
-                    if ui.button("Cancel").clicked() {
-                        self.update_rid.take().unwrap().handle.abort();
+                    if self.update_rid.is_some() {
+                        if ui.button("Cancel").clicked() {
+                            self.update_rid.take().unwrap().handle.abort();
+                        }
+                        ui.spinner();
                     }
-                    ui.spinner();
-                }
-                if ui
-                    .button("Lint mods")
-                    .on_hover_text("Lint mods in the current profile")
-                    .clicked()
-                {
-                    self.lints_toggle_window = Some(WindowLintsToggle);
-                }
-                if ui.button("⚙").on_hover_text("Open settings").clicked() {
-                    self.settings_window = Some(WindowSettings::new(&self.state));
-                }
-                if let Some(available_update) = &self.available_update {
                     if ui
-                        .button(egui::RichText::new("\u{26A0}").color(ui.visuals().warn_fg_color))
-                        .on_hover_text(format!(
-                            "Update available: {}\n{}",
-                            available_update.tag_name, available_update.html_url
-                        ))
+                        .button("Lint mods")
+                        .on_hover_text("Lint mods in the current profile")
                         .clicked()
                     {
-                        ui.ctx().output_mut(|o| {
-                            o.open_url = Some(egui::output::OpenUrl {
-                                url: available_update.html_url.clone(),
-                                new_tab: true,
-                            });
-                        });
+                        self.lints_toggle_window = Some(WindowLintsToggle);
                     }
-                }
-                ui.with_layout(egui::Layout::left_to_right(Align::Center), |ui| {
-                    if ui
-                        .button("Logs")
-                        .on_hover_text("Open logs")
-                        .clicked()
+                    if ui.button("⚙").on_hover_text("Open settings").clicked() {
+                        self.settings_window = Some(WindowSettings::new(&self.state));
+                    }
+                    if let Some(available_update) = &self.available_update {
+                        if ui
+                            .button(
+                                egui::RichText::new("\u{26A0}").color(ui.visuals().warn_fg_color),
+                            )
+                            .on_hover_text(format!(
+                                "Update available: {}\n{}",
+                                available_update.tag_name, available_update.html_url
+                            ))
+                            .clicked()
                         {
+                            ui.ctx().output_mut(|o| {
+                                o.open_url = Some(egui::output::OpenUrl {
+                                    url: available_update.html_url.clone(),
+                                    new_tab: true,
+                                });
+                            });
+                        }
+                    }
+                    ui.with_layout(egui::Layout::left_to_right(Align::Center), |ui| {
+                        if ui.button("Logs").on_hover_text("Open logs").clicked() {
                             self.show_log_window = true;
                         }
 
-                    if self.show_log_window {
-                        ctx.show_viewport_immediate(
-                            egui::ViewportId::from_hash_of("logs"),
-                            egui::ViewportBuilder::default()
-                                .with_title("Logs")
-                                .with_inner_size([600.0, 400.0]),
-                            |ctx, _class| {
-                                let log_path = self.state.dirs.data_dir.join("mint.log").clone();
-                                let contents = fs::read_to_string(log_path)
-                                            .expect("Didn't find log file");
+                        if self.show_log_window {
+                            ctx.show_viewport_immediate(
+                                egui::ViewportId::from_hash_of("logs"),
+                                egui::ViewportBuilder::default()
+                                    .with_title("Logs")
+                                    .with_inner_size([600.0, 400.0]),
+                                |ctx, _class| {
+                                    let log_path =
+                                        self.state.dirs.data_dir.join("mint.log").clone();
+                                    let contents =
+                                        fs::read_to_string(log_path).expect("Didn't find log file");
 
-                                egui::CentralPanel::default().show(ctx, |ui| {
-                                    let scroll_height =
-                                    (ui.available_height() - 30.0).clamp(0.0, f32::INFINITY);
-                                    // FIXME Scroll bar doesn't stick to the right side of the window
-                                    // but it appears and the end of the longest line
-                                    egui::ScrollArea::vertical()
-                                        .max_height(scroll_height)
-                                        .show(ui, |ui|{
-                                            ui.add(egui::Label::new(contents));
-                                        });
-                                });
-
-                                egui::TopBottomPanel::bottom("log_panel")
-                                .exact_height(27.0)
-                                .show(ctx, |ui| {
-                                    ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                                        if ui.button("Open logs file").clicked() {
-                                            let _ = opener::open(self.state.dirs.data_dir.join("mint.log"));
-                                        };
+                                    egui::CentralPanel::default().show(ctx, |ui| {
+                                        let scroll_height = (ui.available_height() - 30.0)
+                                            .clamp(0.0, f32::INFINITY);
+                                        // FIXME Scroll bar doesn't stick to the right side of the window
+                                        // but it appears and the end of the longest line
+                                        egui::ScrollArea::vertical()
+                                            .max_height(scroll_height)
+                                            .show(ui, |ui| {
+                                                ui.add(egui::Label::new(contents));
+                                            });
                                     });
-                                });
 
-                                if ctx.input(|i| i.viewport().close_requested()) {
-                                    // Tell parent viewport that we should not show next frame:
-                                    self.show_log_window = false;
+                                    egui::TopBottomPanel::bottom("log_panel")
+                                        .exact_height(27.0)
+                                        .show(ctx, |ui| {
+                                            ui.with_layout(
+                                                egui::Layout::right_to_left(Align::Center),
+                                                |ui| {
+                                                    if ui.button("Open logs file").clicked() {
+                                                        let _ = opener::open(
+                                                            self.state
+                                                                .dirs
+                                                                .data_dir
+                                                                .join("mint.log"),
+                                                        );
+                                                    };
+                                                },
+                                            );
+                                        });
+
+                                    if ctx.input(|i| i.viewport().close_requested()) {
+                                        // Tell parent viewport that we should not show next frame:
+                                        self.show_log_window = false;
+                                    }
+                                },
+                            );
+                        }
+
+                        if let Some(last_action) = &self.last_action {
+                            let msg = match &last_action.status {
+                                LastActionStatus::Success(msg) => {
+                                    ui.label(
+                                        egui::RichText::new("STATUS")
+                                            .color(Color32::BLACK)
+                                            .background_color(Color32::LIGHT_GREEN),
+                                    );
+                                    msg
                                 }
-                            });
-                    }
-
-                    if let Some(last_action) = &self.last_action {
-                        let msg = match &last_action.status {
-                            LastActionStatus::Success(msg) => {
-                                ui.label(
-                                    egui::RichText::new("STATUS")
-                                        .color(Color32::BLACK)
-                                        .background_color(Color32::LIGHT_GREEN),
-                                );
-                                msg
-                            }
-                            LastActionStatus::Failure(msg) => {
-                                ui.label(
-                                    egui::RichText::new("STATUS")
-                                        .color(Color32::BLACK)
-                                        .background_color(Color32::LIGHT_RED),
-                                );
-                                msg
-                            }
-                        };
-                        ui.ctx().request_repaint(); // for continuously updating time
-                        ui.add(egui::Label::new(format!("({}): {}", last_action.timeago(), msg))
-                                .truncate()
-                        );
-                    }
+                                LastActionStatus::Failure(msg) => {
+                                    ui.label(
+                                        egui::RichText::new("STATUS")
+                                            .color(Color32::BLACK)
+                                            .background_color(Color32::LIGHT_RED),
+                                    );
+                                    msg
+                                }
+                            };
+                            ui.ctx().request_repaint(); // for continuously updating time
+                            ui.add(
+                                egui::Label::new(format!("({}): {}", last_action.timeago(), msg))
+                                    .truncate(),
+                            );
+                        }
+                    });
                 });
             });
-        });
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.add_enabled_ui(
                 self.integrate_rid.is_none()
                     && self.update_rid.is_none()
                     && self.lint_rid.is_none(),
-                    |ui| {
-
-                        // profile selection
-                        let buttons = |ui: &mut Ui, mod_data: &mut ModData| {
-                            if ui
-                                .button("📋")
-                                .on_hover_text_at_pointer("Copy profile mods")
-                                .clicked()
-                            {
-                                let mut mods = Vec::new();
-                                let active_profile = mod_data.active_profile.clone();
-                                mod_data.for_each_enabled_mod(&active_profile, |mc| {
-                                    mods.push(mc.clone());
-                                });
-                                let mods = Self::build_mod_string(&mods);
-                                ui.output_mut(|o| o.copied_text = mods);
-                            }
-
-                            // TODO: find better icon, flesh out multiple-view usage, fix GUI locking
-                            // PONDER What was the idea behind this?
-                            // Opens separate window, within main window borders, with the list of mods in selected profile
-                            /*
-                            if ui
-                                .button("pop out")
-                                .on_hover_text_at_pointer("pop out")
-                                .clicked()
-                            {
-                                self.open_profiles.insert(mod_data.active_profile.clone());
-                            }
-                            */
-                        };
-
-                        if named_combobox::ui(
-                            ui,
-                            "profile",
-                            self.state.mod_data.deref_mut().deref_mut(),
-                            Some(buttons),
-                        ) {
-                            self.state.mod_data.save().unwrap();
+                |ui| {
+                    // profile selection
+                    let buttons = |ui: &mut Ui, mod_data: &mut ModData| {
+                        if ui
+                            .button("📋")
+                            .on_hover_text_at_pointer("Copy profile mods")
+                            .clicked()
+                        {
+                            let mut mods = Vec::new();
+                            let active_profile = mod_data.active_profile.clone();
+                            mod_data.for_each_enabled_mod(&active_profile, |mc| {
+                                mods.push(mc.clone());
+                            });
+                            let mods = Self::build_mod_string(&mods);
+                            ui.output_mut(|o| o.copied_text = mods);
                         }
 
-                        ui.separator();
+                        // TODO: find better icon, flesh out multiple-view usage, fix GUI locking
+                        // PONDER What was the idea behind this?
+                        // Opens separate window, within main window borders, with the list of mods in selected profile
+                        /*
+                        if ui
+                            .button("pop out")
+                            .on_hover_text_at_pointer("pop out")
+                            .clicked()
+                        {
+                            self.open_profiles.insert(mod_data.active_profile.clone());
+                        }
+                        */
+                    };
 
-                        ui.with_layout(egui::Layout::right_to_left(Align::TOP), |ui| {
-                            if self.resolve_mod_rid.is_some() {
-                                ui.spinner();
-                            }
+                    if named_combobox::ui(
+                        ui,
+                        "profile",
+                        self.state.mod_data.deref_mut().deref_mut(),
+                        Some(buttons),
+                    ) {
+                        self.state.mod_data.save().unwrap();
+                    }
 
-                            egui::ScrollArea::vertical()
+                    ui.separator();
+
+                    ui.with_layout(egui::Layout::right_to_left(Align::TOP), |ui| {
+                        if self.resolve_mod_rid.is_some() {
+                            ui.spinner();
+                        }
+
+                        egui::ScrollArea::vertical()
                             .max_height(300.0)
-                            .show(ui, |ui|{
+                            .show(ui, |ui| {
                                 ui.with_layout(ui.layout().with_main_justify(true), |ui| {
                                     // define multiline layouter to be able to show multiple lines in a single line widget
                                     let font_id = FontSelection::default().resolve(ui.style());
                                     let text_color = ui.visuals().widgets.inactive.text_color();
-                                    let mut multiline_layouter = move |ui: &Ui, text: &str, wrap_width: f32| {
-                                        let layout_job = LayoutJob::simple(
-                                            text.to_string(),
-                                            font_id.clone(),
-                                            text_color,
-                                            wrap_width,
-                                        );
-                                        ui.fonts(|f| f.layout_job(layout_job))
-                                    };
+                                    let mut multiline_layouter =
+                                        move |ui: &Ui, text: &str, wrap_width: f32| {
+                                            let layout_job = LayoutJob::simple(
+                                                text.to_string(),
+                                                font_id.clone(),
+                                                text_color,
+                                                wrap_width,
+                                            );
+                                            ui.fonts(|f| f.layout_job(layout_job))
+                                        };
 
                                     let resolve = ui.add_enabled(
                                         self.resolve_mod_rid.is_none(),
@@ -2074,170 +2090,194 @@ impl eframe::App for App {
                                             .hint_text("Add mod..."),
                                     );
                                     if is_committed(&resolve) {
-                                        message::ResolveMods::send(self, ctx, self.parse_mods(), false);
+                                        message::ResolveMods::send(
+                                            self,
+                                            ctx,
+                                            self.parse_mods(),
+                                            false,
+                                        );
                                         self.problematic_mod_id = None;
                                     }
                                 });
                             });
-                        });
+                    });
 
-                        let profile = self.state.mod_data.active_profile.clone();
-                        ui.add_space(2.0);
-                        ui.horizontal(|ui| {
-                            ui.label("Sort by: ");
+                    let profile = self.state.mod_data.active_profile.clone();
+                    ui.add_space(2.0);
+                    ui.horizontal(|ui| {
+                        ui.label("Sort by: ");
 
-                            let (mut sort_category, mut is_ascending) = self
-                                .get_sorting_config()
-                                .map(|c| (Some(c.sort_category), c.is_ascending))
-                                .unwrap_or_default();
+                        let (mut sort_category, mut is_ascending) = self
+                            .get_sorting_config()
+                            .map(|c| (Some(c.sort_category), c.is_ascending))
+                            .unwrap_or_default();
 
-                            egui::ComboBox::from_id_salt("sort_cat")
-                            .selected_text({
-                                match sort_category {
-                                    None => "Manual",
-                                    Some(category) => category.as_str(),
+                        egui::ComboBox::from_id_salt("sort_cat")
+                            .selected_text(
+                                {
+                                    match sort_category {
+                                        None => "Manual",
+                                        Some(category) => category.as_str(),
+                                    }
                                 }
-                            }.to_string())
-                            .show_ui(ui, |ui|{
-                                    if ui.selectable_value(&mut sort_category, None, "Manual")
+                                .to_string(),
+                            )
+                            .show_ui(ui, |ui| {
+                                if ui
+                                    .selectable_value(&mut sort_category, None, "Manual")
                                     .clicked()
+                                {
+                                    self.update_sorting_config(sort_category, is_ascending);
+                                };
+                                for category in SortBy::iter() {
+                                    let combo_label = category.as_str().to_owned();
+                                    if ui
+                                        .selectable_value(
+                                            &mut sort_category,
+                                            Some(category),
+                                            combo_label,
+                                        )
+                                        .clicked()
                                     {
                                         self.update_sorting_config(sort_category, is_ascending);
                                     };
-                                    for category in SortBy::iter() {
-                                        let combo_label = category.as_str().to_owned();
-                                        if ui.selectable_value(&mut sort_category, Some(category), combo_label)
-                                        .clicked()
-                                        {
-                                            self.update_sorting_config(sort_category, is_ascending);
-                                        };
-                                    }
+                                }
                             });
 
-                            ui.label("Order: ");
+                        ui.label("Order: ");
 
-                            ui.add_enabled_ui(sort_category.is_some(), |ui|{
-                                egui::ComboBox::from_id_salt("order")
-                                .selected_text(
-                                    match is_ascending{
-                                        true => "Ascending",
-                                        false => "Descending",
-                                    }
-                                )
-                                .show_ui(ui, |ui|{
-                                    if ui.selectable_value(&mut is_ascending, true, "Ascending")
-                                    .clicked(){
+                        ui.add_enabled_ui(sort_category.is_some(), |ui| {
+                            egui::ComboBox::from_id_salt("order")
+                                .selected_text(match is_ascending {
+                                    true => "Ascending",
+                                    false => "Descending",
+                                })
+                                .show_ui(ui, |ui| {
+                                    if ui
+                                        .selectable_value(&mut is_ascending, true, "Ascending")
+                                        .clicked()
+                                    {
                                         self.update_sorting_config(sort_category, is_ascending);
                                     }
-                                    if ui.selectable_value(&mut is_ascending, false, "Descending")
-                                    .clicked(){
+                                    if ui
+                                        .selectable_value(&mut is_ascending, false, "Descending")
+                                        .clicked()
+                                    {
                                         self.update_sorting_config(sort_category, is_ascending);
                                     }
                                 });
-                            });
+                        });
 
-                            ui.add(egui::Separator::default().vertical());
-                            // ui.label("Display: ");
-                            egui::ComboBox::from_id_salt("display")
+                        ui.add(egui::Separator::default().vertical());
+                        // ui.label("Display: ");
+                        egui::ComboBox::from_id_salt("display")
                             .selected_text("Display filters")
-                            .show_ui(ui, |ui|{
+                            .show_ui(ui, |ui| {
                                 ui.checkbox(&mut self.show_version_combo, "Version select");
                                 ui.checkbox(&mut self.show_copy_url, "Copy URL");
                                 ui.checkbox(&mut self.show_mod_type_tags, "Mod tags");
                             });
 
-                            ui.add_space(16.);
-                            // TODO: actually implement mod groups.
-                            let search_string = &mut self.search_string;
-                            let lower = search_string.to_lowercase();
-                            let any_matches = self.state.mod_data.any_mod(&profile, |mc, _| {
-                                self.state
-                                    .store
-                                    .get_mod_info(&mc.spec)
-                                    .map(|i| i.name.to_lowercase().contains(&lower))
-                                    .unwrap_or(false)
-                            });
-
-                            let mut text_edit = egui::TextEdit::singleline(search_string).hint_text("Search");
-                            if !any_matches {
-                                text_edit = text_edit.text_color(ui.visuals().error_fg_color);
-                            }
-                            let res = ui
-                                .new_child(UiBuilder::new()
-                                            .max_rect(ui.available_rect_before_wrap())
-                                            .layout(egui::Layout::bottom_up(Align::RIGHT)))
-                                .add(text_edit);
-                            if res.changed() {
-                                self.scroll_to_match = true;
-                            }
-                            if res.lost_focus()
-                                && ui.input(|i| {
-                                    i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)
-                                })
-                            {
-                                *search_string = String::new();
-                                self.scroll_to_match = false;
-                            } else if self.focus_search {
-                                res.request_focus();
-                                // FIXME This is still an erroneous behaviour, but more acceptable than alternative
-                                // Doesn't save the first character when typing in unfocused state
-                                // without this line, thefirst character stays in the search bar
-                                // but cursor moves to the beggining of the string
-                                *search_string = String::new();
-                                self.focus_search = false;
-                            }
+                        ui.add_space(16.);
+                        // TODO: actually implement mod groups.
+                        let search_string = &mut self.search_string;
+                        let lower = search_string.to_lowercase();
+                        let any_matches = self.state.mod_data.any_mod(&profile, |mc, _| {
+                            self.state
+                                .store
+                                .get_mod_info(&mc.spec)
+                                .map(|i| i.name.to_lowercase().contains(&lower))
+                                .unwrap_or(false)
                         });
 
-                        ui.separator();
+                        let mut text_edit =
+                            egui::TextEdit::singleline(search_string).hint_text("Search");
+                        if !any_matches {
+                            text_edit = text_edit.text_color(ui.visuals().error_fg_color);
+                        }
+                        let res = ui
+                            .new_child(
+                                UiBuilder::new()
+                                    .max_rect(ui.available_rect_before_wrap())
+                                    .layout(egui::Layout::bottom_up(Align::RIGHT)),
+                            )
+                            .add(text_edit);
+                        if res.changed() {
+                            self.scroll_to_match = true;
+                        }
+                        if res.lost_focus()
+                            && ui.input(|i| {
+                                i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)
+                            })
+                        {
+                            *search_string = String::new();
+                            self.scroll_to_match = false;
+                        } else if self.focus_search {
+                            res.request_focus();
+                            // FIXME This is still an erroneous behaviour, but more acceptable than alternative
+                            // Doesn't save the first character when typing in unfocused state
+                            // without this line, thefirst character stays in the search bar
+                            // but cursor moves to the beggining of the string
+                            *search_string = String::new();
+                            self.focus_search = false;
+                        }
+                    });
 
-                        self.ui_profile(ui, &profile);
+                    ui.separator();
 
-                        // must access memory outside of input lock to prevent deadlock
-                        let is_anything_focused = ctx.memory(|m| m.focused().is_some());
-                        ctx.input(|i| {
-                            if !i.raw.dropped_files.is_empty()
-                                && self.integrate_rid.is_none()
-                                && self.update_rid.is_none()
+                    self.ui_profile(ui, &profile);
+
+                    // must access memory outside of input lock to prevent deadlock
+                    let is_anything_focused = ctx.memory(|m| m.focused().is_some());
+                    ctx.input(|i| {
+                        if !i.raw.dropped_files.is_empty()
+                            && self.integrate_rid.is_none()
+                            && self.update_rid.is_none()
+                        {
+                            let mut mods = String::new();
+                            for f in i
+                                .raw
+                                .dropped_files
+                                .iter()
+                                .filter_map(|f| f.path.as_ref().map(|p| p.to_string_lossy()))
                             {
-                                let mut mods = String::new();
-                                for f in i
-                                    .raw
-                                    .dropped_files
-                                    .iter()
-                                    .filter_map(|f| f.path.as_ref().map(|p| p.to_string_lossy()))
-                                {
-                                    mods.push_str(&f);
-                                    mods.push('\n');
-                                }
+                                mods.push_str(&f);
+                                mods.push('\n');
+                            }
 
-                                self.resolve_mod = mods.trim().to_string();
-                                message::ResolveMods::send(self, ctx, self.parse_mods(), false);
-                                self.problematic_mod_id = None;
-                            }
-                            for e in &i.events {
-                                match e {
-                                    egui::Event::Paste(s) => {
-                                        if self.integrate_rid.is_none()
-                                            && self.update_rid.is_none()
-                                            && self.lint_rid.is_none()
-                                            && !is_anything_focused
-                                        {
-                                            self.resolve_mod = s.trim().to_string();
-                                            message::ResolveMods::send(self, ctx, self.parse_mods(), false);
-                                        }
+                            self.resolve_mod = mods.trim().to_string();
+                            message::ResolveMods::send(self, ctx, self.parse_mods(), false);
+                            self.problematic_mod_id = None;
+                        }
+                        for e in &i.events {
+                            match e {
+                                egui::Event::Paste(s) => {
+                                    if self.integrate_rid.is_none()
+                                        && self.update_rid.is_none()
+                                        && self.lint_rid.is_none()
+                                        && !is_anything_focused
+                                    {
+                                        self.resolve_mod = s.trim().to_string();
+                                        message::ResolveMods::send(
+                                            self,
+                                            ctx,
+                                            self.parse_mods(),
+                                            false,
+                                        );
                                     }
-                                    egui::Event::Text(text) => {
-                                        if !is_anything_focused {
-                                            self.search_string = text.to_string();
-                                            self.scroll_to_match = true;
-                                            self.focus_search = true;
-                                        }
-                                    }
-                                    _ => {}
                                 }
+                                egui::Event::Text(text) => {
+                                    if !is_anything_focused {
+                                        self.search_string = text.to_string();
+                                        self.scroll_to_match = true;
+                                        self.focus_search = true;
+                                    }
+                                }
+                                _ => {}
                             }
-                        });
-                    }
+                        }
+                    });
+                },
             );
         });
     }
