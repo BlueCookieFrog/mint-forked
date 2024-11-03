@@ -1590,6 +1590,7 @@ impl App {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn sort_mods(
     config: SortingConfig,
 ) -> impl Fn((&ModOrGroup, Option<&ModInfo>), (&ModOrGroup, Option<&ModInfo>)) -> Ordering {
