@@ -6,7 +6,7 @@ mod toggle_switch;
 
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
+use fs_err as fs;
 use std::ops::{Deref, RangeInclusive};
 use std::time::{Duration, Instant, SystemTime};
 use std::{
@@ -549,14 +549,12 @@ impl App {
                         );
                     });
 
-                    if self.show_copy_url{
-                        if ui
+                    if self.show_copy_url &&
+                        ui
                         .button("📋")
                         .on_hover_text_at_pointer("copy URL")
-                        .clicked()
-                        {
+                        .clicked(){
                             ui.output_mut(|o| o.copied_text = mc.spec.url.to_string());
-                        }
                     }
 
                     if mc.enabled {
@@ -1771,10 +1769,11 @@ impl eframe::App for App {
                                 let args = args.clone();
                                 tokio::task::spawn_blocking(move || {
                                     let mut iter = args.iter();
-                                    std::process::Command::new(iter.next().unwrap())
+                                    let _ = std::process::Command::new(iter.next().unwrap())
                                         .args(iter)
                                         .spawn()
-                                        .unwrap();
+                                        .unwrap()
+                                        .wait();
                                 });
                             }
                             ui.add(egui::Separator::default().vertical().shrink(4.0));
@@ -2092,12 +2091,12 @@ impl eframe::App for App {
                                 .unwrap_or_default();
 
                             egui::ComboBox::from_id_salt("sort_cat")
-                            .selected_text(format!("{}",{
+                            .selected_text({
                                 match sort_category {
                                     None => "Manual",
                                     Some(category) => category.as_str(),
                                 }
-                            }))
+                            }.to_string())
                             .show_ui(ui, |ui|{
                                     if ui.selectable_value(&mut sort_category, None, "Manual")
                                     .clicked()
