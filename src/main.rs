@@ -1,4 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+#[allow(clippy::type_complexity)]
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
