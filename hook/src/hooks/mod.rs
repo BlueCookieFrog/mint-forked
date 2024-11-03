@@ -8,7 +8,7 @@ use std::{
     ptr::NonNull,
 };
 
-use std::sync::{LazyLock, Mutex};
+use std::sync::Mutex;
 use anyhow::{Context, Result};
 use fs_err as fs;
 use mint_lib::DRGInstallationType;
@@ -161,7 +161,7 @@ unsafe fn patch_mem(address: *mut u8, patch: impl AsRef<[u8]>) -> Result<()> {
     Ok(())
 }
 
-static SAVES_DIR: LazyLock<Mutex<Option<PathBuf>>> = LazyLock::new(|| Mutex::new(None));
+static SAVES_DIR: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 fn get_path_for_slot(slot_name: &ue::FString) -> Option<PathBuf> {
     let mut str_path = slot_name.to_string();
