@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use crate::GLOBALS;
+use crate::globals;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -32,13 +32,7 @@ impl<T> Drop for TArray<T> {
                 self.num as usize,
             ))
         }
-        GLOBALS
-            .lock()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .gmalloc()
-            .free(self.data.cast());
+        globals().gmalloc().free(self.data.cast());
     }
 }
 impl<T> Default for TArray<T> {
@@ -53,7 +47,7 @@ impl<T> Default for TArray<T> {
 impl<T> TArray<T> {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            data: GLOBALS.lock().unwrap().as_ref().unwrap().gmalloc().malloc(
+            data: globals().gmalloc().malloc(
                 capacity * std::mem::size_of::<T>(),
                 std::mem::align_of::<T>() as u32,
             ) as *mut _,
@@ -95,7 +89,7 @@ impl<T> TArray<T> {
     pub fn reserve(&mut self, additional: usize) {
         if self.num + additional as i32 >= self.max {
             self.max = u32::next_power_of_two((self.max + additional as i32) as u32) as i32;
-            let new = GLOBALS.lock().unwrap().as_ref().unwrap().gmalloc().realloc(
+            let new = globals().gmalloc().realloc(
                 self.data as *mut c_void,
                 self.max as usize * std::mem::size_of::<T>(),
                 std::mem::align_of::<T>() as u32,

@@ -28,14 +28,9 @@ impl FFrame {
         if self.code.is_null() {
             let cur = self.property_chain_for_compiled_in;
             self.property_chain_for_compiled_in = (*cur).next;
-            (GLOBALS
-                .lock()
-                .unwrap()
-                .as_ref()
-                .unwrap()
-                .fframe_step_explicit_property())(self, ptr, cur as *const FProperty);
+            (globals().fframe_step_explicit_property())(self, ptr, cur as *const FProperty);
         } else {
-            (GLOBALS.lock().unwrap().as_ref().unwrap().fframe_step())(self, self.object, ptr);
+            (globals().fframe_step())(self, self.object, ptr);
         }
 
         value.assume_init()

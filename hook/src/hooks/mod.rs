@@ -6,17 +6,18 @@ use std::{
     ffi::c_void,
     path::{Path, PathBuf},
     ptr::NonNull,
+    sync::OnceLock,
 };
 
 use anyhow::{Context, Result};
 use fs_err as fs;
 use mint_lib::DRGInstallationType;
-use std::sync::Mutex;
 use windows::Win32::System::Memory::{VirtualProtect, PAGE_EXECUTE_READWRITE};
 
 use crate::{
+    globals,
     ue::{self, FLinearColor, UObject},
-    GLOBALS, LOG_GUARD,
+    LOG_GUARD,
 };
 
 retour::static_detour! {
@@ -56,37 +57,13 @@ pub unsafe fn initialize() -> Result<()> {
     .collect::<std::collections::HashMap<_, ExecFn>>();
 
     WinMain.initialize(
-        std::mem::transmute(
-            GLOBALS
-                .lock()
-                .unwrap()
-                .as_ref()
-                .unwrap()
-                .resolution
-                .core
-                .as_ref()
-                .unwrap()
-                .main
-                .0,
-        ),
+        std::mem::transmute(globals().resolution.core.as_ref().unwrap().main.0),
         detour_main,
     )?;
     WinMain.enable()?;
 
     HookUFunctionBind.initialize(
-        std::mem::transmute(
-            GLOBALS
-                .lock()
-                .unwrap()
-                .as_ref()
-                .unwrap()
-                .resolution
-                .core
-                .as_ref()
-                .unwrap()
-                .ufunction_bind
-                .0,
-        ),
+        std::mem::transmute(globals().resolution.core.as_ref().unwrap().ufunction_bind.0),
         move |function| {
             HookUFunctionBind.call(function);
             if let Some(function) = function.as_mut() {
@@ -114,7 +91,7 @@ pub unsafe fn initialize() -> Result<()> {
 
     match installation_type {
         DRGInstallationType::Steam => {
-            if let Ok(address) = &GLOBALS.lock().unwrap().as_ref().unwrap().resolution.disable {
+            if let Ok(address) = &globals().resolution.disable {
                 patch_mem(
                     (address.0 as *mut u8).add(29),
                     [0xB8, 0x01, 0x00, 0x00, 0x00],
@@ -122,26 +99,20 @@ pub unsafe fn initialize() -> Result<()> {
             }
         }
         DRGInstallationType::Xbox => {
-            SAVES_DIR.lock().unwrap().replace(
+            SAVES_DIR.get_or_init(|| {
                 std::env::current_exe()
                     .ok()
                     .as_deref()
                     .and_then(Path::parent)
                     .and_then(Path::parent)
                     .and_then(Path::parent)
-                    .context("could not determine save location")?
+                    .context("could not determine save location")
+                    .unwrap()
                     .join("Saved")
-                    .join("SaveGames"),
-            );
+                    .join("SaveGames")
+            });
 
-            if let Ok(save_game) = &GLOBALS
-                .lock()
-                .unwrap()
-                .as_ref()
-                .unwrap()
-                .resolution
-                .save_game
-            {
+            if let Ok(save_game) = &globals().resolution.save_game {
                 SaveGameToSlot
                     .initialize(
                         std::mem::transmute(save_game.save_game_to_slot.0),
@@ -191,14 +162,14 @@ unsafe fn patch_mem(address: *mut u8, patch: impl AsRef<[u8]>) -> Result<()> {
     Ok(())
 }
 
-static SAVES_DIR: Mutex<Option<PathBuf>> = Mutex::new(None);
+static SAVES_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 fn get_path_for_slot(slot_name: &ue::FString) -> Option<PathBuf> {
     let mut str_path = slot_name.to_string();
     str_path.push_str(".sav");
 
     let path = std::path::Path::new(&str_path);
-    let mut normalized_path = SAVES_DIR.lock().unwrap().as_ref()?.clone();
+    let mut normalized_path = SAVES_DIR.get()?.clone();
 
     for component in path.components() {
         if let std::path::Component::Normal(c) = component {
@@ -221,13 +192,7 @@ fn save_game_to_slot_detour(
         } else {
             let mut data: ue::TArray<u8> = Default::default();
 
-            if !(GLOBALS
-                .lock()
-                .unwrap()
-                .as_ref()
-                .unwrap()
-                .save_game_to_memory())(save_game_object, &mut data)
-            {
+            if !(globals().save_game_to_memory())(save_game_object, &mut data) {
                 return false;
             }
 
@@ -252,12 +217,7 @@ fn load_game_from_slot_detour(slot_name: *const ue::FString, user_index: i32) ->
             LoadGameFromSlot.call(slot_name, user_index)
         } else if let Some(data) = get_path_for_slot(slot_name).and_then(|path| fs::read(path).ok())
         {
-            (GLOBALS
-                .lock()
-                .unwrap()
-                .as_ref()
-                .unwrap()
-                .load_game_from_memory())(&ue::TArray::from(data.as_slice()))
+            (globals().load_game_from_memory())(&ue::TArray::from(data.as_slice()))
         } else {
             std::ptr::null()
         }
@@ -295,7 +255,7 @@ fn detour_main(
     };
 
     // about to exit, drop log guard
-    drop(LOG_GUARD.lock().unwrap().take());
+    drop(LOG_GUARD.lock().unwrap());
 
     ret
 }
@@ -315,7 +275,7 @@ unsafe extern "system" fn exec_get_mod_json(
         .as_mut()
         .unwrap();
 
-    let json = serde_json::to_string(&GLOBALS.lock().unwrap().as_ref().unwrap().meta).unwrap();
+    let json = serde_json::to_string(&globals().meta).unwrap();
 
     ret_address.clear();
     ret_address.extend_from_slice(&json.encode_utf16().chain([0]).collect::<Vec<_>>());

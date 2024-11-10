@@ -1,7 +1,7 @@
 mod hooks;
 mod ue;
 
-use std::{io::BufReader, path::Path};
+use std::{io::BufReader, path::Path, sync::OnceLock};
 
 use anyhow::{Context, Result};
 use fs_err as fs;
@@ -53,7 +53,7 @@ unsafe extern "system" fn init(_: usize) {
     patch().ok();
 }
 
-static GLOBALS: Mutex<Option<Globals>> = Mutex::new(None);
+static GLOBALS: OnceLock<Globals> = OnceLock::new();
 static LOG_GUARD: Mutex<Option<tracing_appender::non_blocking::WorkerGuard>> = Mutex::new(None);
 
 pub struct Globals {
@@ -126,9 +126,9 @@ impl Globals {
     }
 }
 
-// pub fn globals() -> &'static Globals {
-//     unsafe { GLOBALS.as_ref().unwrap() }
-// }
+pub fn globals() -> &'static Globals {
+    GLOBALS.get().unwrap()
+}
 
 unsafe fn patch() -> Result<()> {
     let exe_path = std::env::current_exe().ok();
@@ -156,10 +156,7 @@ unsafe fn patch() -> Result<()> {
     let resolution = image.resolve(hook_resolvers::HookResolution::resolver())?;
     info!("PS scan: {:#x?}", resolution);
 
-    GLOBALS
-        .lock()
-        .unwrap()
-        .replace(Globals { resolution, meta });
+    GLOBALS.get_or_init(|| Globals { resolution, meta });
     LOG_GUARD.lock().unwrap().replace(guard.unwrap());
 
     hooks::initialize()?;
